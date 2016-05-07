@@ -1,1 +1,0 @@
-export var globalContext : CanvasRenderingContext2D;
