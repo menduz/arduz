@@ -1,0 +1,39 @@
+<html>
+
+<head>
+    <title>Arduz</title>
+
+    <style>
+        body {
+            background: #000 url(cdn/ui/fonapp.png);
+            color: #fff;
+            font-family: "Arial";
+            padding: 0;
+            margin: 0;
+            box-shadow: inset 0 0 240px 10px #000;
+        }
+        
+        #contenedorGrande {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 100%;
+            background: url(cdn/ui/frame.png) no-repeat scroll calc(50% + 3px) calc(50% + 3px);
+        }
+    </style>
+
+    <script type="text/javascript" src="bower_components/mzcore/mz.boot.js?lang=es"></script>
+    <script type="text/javascript" src="js/arduz.js"></script>
+</head>
+
+<body style="position: relative;">
+    <div id="contenedorGrande" style="">
+        <div style="width:1024px;height:600px;display: block;position:absolute;top:50%;left:50%;margin-top:-300px;margin-left:-512px;">
+            <canvas id="juego" style="width:800px;height:600px;top:0;left:0;position:absolute;background: #000"></canvas>
+        </div>
+    </div>
+</body>
+
+</html>

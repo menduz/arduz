@@ -1,0 +1,6 @@
+{
+  "name": "arduz",
+  "dependencies": {
+    "mzcore": "^0.1.4"
+  }
+}

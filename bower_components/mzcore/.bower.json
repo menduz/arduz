@@ -1,0 +1,47 @@
+{
+  "name": "mzcore",
+  "description": "A templating library built on top of Typescript",
+  "main": "mz.boot.js",
+  "authors": [
+    "Agustin Mendez (@menduz) <agustin.mz.92@gmail.com>"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "typescript",
+    "templates",
+    "mvc",
+    "redux"
+  ],
+  "homepage": "http://mzcore.menduz.com",
+  "moduleType": [
+    "globals"
+  ],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "src",
+    "!dist/src",
+    "*.md",
+    "gulpfile.js",
+    "index.html",
+    "tsconfig.json",
+    "jsconfig.json"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/menduz/mzcore.git"
+  },
+  "version": "0.1.4",
+  "_release": "0.1.4",
+  "_resolution": {
+    "type": "version",
+    "tag": "0.1.4",
+    "commit": "4b39edb586328ebdd1cee3c58521e79a59b00f81"
+  },
+  "_source": "https://github.com/menduz/mzcore.git",
+  "_target": "^0.1.4",
+  "_originalSource": "mzcore",
+  "_direct": true
+}

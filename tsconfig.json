@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "module": "amd",
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "target": "es5",
+        "diagnostics": true
+    },
+    "exclude": [
+        "node_modules",
+        "cdn"
+    ]
+}

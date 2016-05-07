@@ -1,0 +1,24 @@
+{
+  "name": "arduz",
+  "version": "1.0.0",
+  "description": "arduz =====",
+  "main": "index.js",
+  "scripts": {
+    "test": "test",
+    "build": "tsc -p tsconfig.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/menduz/arduz.git"
+  },
+  "author": "Agustin Mendez (@menduz)",
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/menduz/arduz/issues"
+  },
+  "homepage": "https://github.com/menduz/arduz#readme",
+  "devDependencies": {
+    "bower": "^1.7.9",
+    "typescript": "^1.8.10"
+  }
+}
