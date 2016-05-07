@@ -4,7 +4,7 @@ var ventanas = [];
 var vPush = function (v) {
 	var ind = -1;
 	if ((ind = ventanas.indexOf(v)) != -1) {
-		ventanas.push(ventanas.splice(ind, 1));
+		ventanas.push(ventanas.splice(ind, 1)[0]);
 	} else {
 		ventanas.push(v);
 	}
@@ -17,7 +17,7 @@ var vPop = function (v) {
 	}
 }
 
-abstract class MzWindow extends mz.EventDispatcher {
+export abstract class MzWindow extends mz.EventDispatcher {
 	show() {
 		vPush(this);
 		this.trigger('show');
@@ -43,13 +43,13 @@ abstract class MzWindow extends mz.EventDispatcher {
 	isVisible(): boolean {
 		return ventanas.indexOf(this) != -1;
 	}
-	static render() {
-		ventanas.forEach(function (e) { e.render() })
-	}
-	static isVisible(window: MzWindow): boolean {
-		return window && ventanas.indexOf(window) != -1;
-	}
+
 }
 
+export function render() {
+	ventanas.forEach(function (e) { e.render() })
+}
 
-export = MzWindow;
+export function isVisible(window: MzWindow): boolean {
+	return window && ventanas.indexOf(window) != -1;
+}

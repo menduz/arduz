@@ -9,7 +9,7 @@ define(["require", "exports"], function (require, exports) {
     var vPush = function (v) {
         var ind = -1;
         if ((ind = ventanas.indexOf(v)) != -1) {
-            ventanas.push(ventanas.splice(ind, 1));
+            ventanas.push(ventanas.splice(ind, 1)[0]);
         }
         else {
             ventanas.push(v);
@@ -50,13 +50,15 @@ define(["require", "exports"], function (require, exports) {
         MzWindow.prototype.isVisible = function () {
             return ventanas.indexOf(this) != -1;
         };
-        MzWindow.render = function () {
-            ventanas.forEach(function (e) { e.render(); });
-        };
-        MzWindow.isVisible = function (window) {
-            return window && ventanas.indexOf(window) != -1;
-        };
         return MzWindow;
     }(mz.EventDispatcher));
-    return MzWindow;
+    exports.MzWindow = MzWindow;
+    function render() {
+        ventanas.forEach(function (e) { e.render(); });
+    }
+    exports.render = render;
+    function isVisible(window) {
+        return window && ventanas.indexOf(window) != -1;
+    }
+    exports.isVisible = isVisible;
 });
