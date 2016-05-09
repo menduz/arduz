@@ -1,4 +1,4 @@
-import * as grh from 'js/adz/game/grh';
+import * as grh from './grh';
 
 var DB = {};
 var DBHelmets = {};

@@ -1,7 +1,7 @@
 
-import * as grh from 'js/adz/game/grh';
-import * as heads from 'js/adz/game/head';
-import * as engine from 'js/adz/mzengine/mzengine';
+import * as grh from './grh';
+import * as heads from './head';
+import * as engine from '../mzengine/mzengine';
 
 var OFFSET_HEAD = -34;
 
@@ -62,7 +62,7 @@ Body.prototype.render = function (x, y, heading, anim, animEscudo) {
 	this.rightHand && this.rightHand[this.heading] && this.rightHand[this.heading][animEscudo ? 'animatedVertical' : 'quietVertical'](x, y);
 	this.leftHand && this.leftHand[this.heading] && this.leftHand[this.heading][animEscudo ? 'animatedVertical' : 'quietVertical'](x, y);
 
-	this.name && engine.renderTextCentered(this.name, x, y + 16);
+	this.name && engine.renderTextCentered(this.name, x + 16, y + 24);
 };
 
 export var loadRaw = function (url, cb) {

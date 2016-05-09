@@ -1,7 +1,7 @@
 //define(['js/adz/mzengine/mzengine', 'js/adz/mzengine/camera', 'js/adz/mzengine/textures'], function(engine, Camera, textures){	
-import * as engine from 'js/adz/mzengine/mzengine';
-import * as Camera from 'js/adz/mzengine/camera';
-import * as textures from 'js/adz/mzengine/textures';
+import * as engine from './mzengine';
+import * as Camera from './camera';
+import * as textures from './textures';
 
 var that = this;
 
@@ -221,7 +221,7 @@ export = {
 			};
 		}
 
-		chars = chars || mz.require('js/adz/game/char') && mz.require('js/adz/game/char').chars;
+		chars = chars || require('../game/char') && require('../game/char').chars;
 		chars && chars.forEach(function (e) {
 			/*if(e === myChar){
 				var camPos = Camera.pos;//Camera.getPos();

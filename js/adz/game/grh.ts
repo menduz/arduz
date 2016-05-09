@@ -1,6 +1,6 @@
 
-import * as engine from 'js/adz/mzengine/mzengine';
-import * as textures from 'js/adz/mzengine/textures';
+import * as engine from '../mzengine/mzengine';
+import * as textures from '../mzengine/textures';
 
 var indexaciones = {};
 var realizados = {};

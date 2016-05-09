@@ -1,4 +1,5 @@
-import * as engine from 'js/adz/mzengine/mzengine';
+import * as engine from './mzengine';
+
 var x = 0, y = 0;
 
 var width = 0, height = 0, ctx = null;
@@ -30,10 +31,7 @@ export var setSpeed = function (freq) {
 
 export var velCamara = VelCamara;
 
-var map = null;
-mz.require('js/adz/mzengine/map', function (m) {
-	map = m;
-});
+var map = require('./map');
 
 export var update = function (elapsedTime) {
 	if (!map) return;

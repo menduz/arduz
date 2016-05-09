@@ -1,4 +1,4 @@
-import * as mzengine from 'js/adz/mzengine/mzengine';
+import * as mzengine from './mzengine';
 
 var DB = {};
 

@@ -1,6 +1,6 @@
 
-import {KeyStates} from 'js/adz/mzengine/input';
-import * as Camera from 'js/adz/mzengine/camera';
+import {KeyStates} from '../mzengine/input';
+import * as Camera from '../mzengine/camera';
 
 
 var Heading = null;

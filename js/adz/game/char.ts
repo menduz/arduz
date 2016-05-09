@@ -1,10 +1,10 @@
 
-import map = require('js/adz/mzengine/map');
-import {Grh} from 'js/adz/mzengine/textures';
-import * as engine from 'js/adz/mzengine/mzengine';
-import * as bodies from 'js/adz/game/body';
-import * as input from 'js/adz/mzengine/input';
-import * as Camera from 'js/adz/mzengine/camera';
+import map = require('../mzengine/map');
+import {Grh} from '../mzengine/textures';
+import * as engine from '../mzengine/mzengine';
+import * as bodies from './body';
+import * as input from '../mzengine/input';
+import * as Camera from '../mzengine/camera';
 
 export var mainChar = null;
 

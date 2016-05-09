@@ -1,4 +1,4 @@
-import * as win from 'js/adz/mzengine/window';
+import * as win from './window';
 
 var elapsedTime = 0;
 
@@ -80,14 +80,14 @@ function clearScreen() {
 	ctx.clearRect(0, 0, width, height);
 }
 
-export function drawText(text, x, y, centered, color?) {
-	if (text && x && y) {
+export function drawText(text: string, x: number, y: number, centered: boolean, color?) {
+	if (text && x != void 0 && y != void 0) {
 		ctx.save();
 		if (centered) {
 			ctx.textAlign = "center";
 		}
 		ctx.fillStyle = color || "white";
-		ctx.fillText(text, x, y);
+		ctx.fillText(text, x | 0, y | 0);
 		ctx.restore();
 	}
 }
@@ -118,7 +118,7 @@ function drawFPS(elapsedTime) {
 
 export var tick = 0;
 
-export var init = function (_canvas, w, h) {
+export var init = function (_canvas, w?, h?) {
 	canvas = _canvas;
 
 	octx = ctx = canvas.getContext('2d');
@@ -164,27 +164,6 @@ export var translate = function (x, y) {
 }
 
 export var renderHud = null;
-
-
-
-
-
-
-/*
-
-
-mz.require('js/adz/mzengine/camera', function (m) {
-	cam = m;
-	mz.require('js/adz/mzengine/map', function (m) {
-		map = m;
-		map.init();
-	});
-});
-
-
-*/
-
-
 
 export function cameraInitialized(_){
 	cam = _;

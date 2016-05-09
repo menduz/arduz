@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "test",
-    "build": "tsc -p tsconfig.json"
+    "build": "webpack"
   },
   "repository": {
     "type": "git",
@@ -19,6 +19,13 @@
   "homepage": "https://github.com/menduz/arduz#readme",
   "devDependencies": {
     "bower": "^1.7.9",
+    "browserify": "^13.0.1",
     "typescript": "^1.8.10"
+  },
+  "dependencies": {
+    "express": "^4.13.4",
+    "shasum": "^1.0.2",
+    "ts-loader": "^0.8.2",
+    "ws": "^1.1.0"
   }
 }
