@@ -58,7 +58,7 @@ var recachearmapa = mz.delayer(function (cb?) {
 var tilesetLoaded = function () {
 	tilesetsCargadas++;
 
-	console.log(tilesetsPedidas, tilesetsCargadas);
+	//console.log(tilesetsPedidas, tilesetsCargadas);
 
 	recachearmapa();
 }
@@ -80,7 +80,7 @@ var loadTileset = function (tileset, url) {
 
 	textures.get(url).onLoaded(function () {
 		tilesetsCargadas++;
-		console.log(tilesetsPedidas, tilesetsCargadas);
+		//console.log(tilesetsPedidas, tilesetsCargadas);
 		recachearmapa();
 	})
 }
@@ -164,7 +164,7 @@ var cachearMapa = function (cb) {
 			setTimeout(function (Cx, Cy, areasCache) {
 				areasCache[Cx][Cy] = cachearSeccion(Cx, Cy);
 				cacheValue++;
-				console.log('CargandoMapa: ' + cacheValue + '/' + cacheMax, Cx, Cy);
+				//console.log('CargandoMapa: ' + cacheValue + '/' + cacheMax, Cx, Cy);
 				cacheando = cacheValue != cacheMax;
 				cacheando || cb && cb();
 			}, 0, Cx, Cy, areasCache);

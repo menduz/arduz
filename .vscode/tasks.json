@@ -19,6 +19,10 @@
 			"taskName": "build",
 			"args": ["run", "build"],
 			"isBuildCommand": true
+		},
+		{
+			"taskName": "server",
+			"args": ["run", "server"]
 		}
 	]
 }

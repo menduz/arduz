@@ -99,7 +99,7 @@ export var loadRaw = function (url, cb) {
 				}
 			}
 
-			console.log(cuerpos)
+			//console.log(cuerpos)
 
 			loaded = true;
 

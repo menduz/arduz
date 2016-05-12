@@ -47,6 +47,7 @@
 	"use strict";
 	var engine = __webpack_require__(1);
 	var lg = __webpack_require__(3);
+	var client = __webpack_require__(5);
 	function RequireList() {
 	    var rlcount = 0;
 	    var pending = 0;
@@ -94,24 +95,24 @@
 	    var cbCascos = requireListGameEngine(function () {
 	        console.info('Cascos cargados!');
 	    });
-	    __webpack_require__(5).cargarGraficosRaw('cdn/indexes/graficos.txt', cbGraficos);
-	    __webpack_require__(6).loadRaw('cdn/indexes/cuerpos.txt', cbCuerpos);
-	    var heads = __webpack_require__(7);
+	    __webpack_require__(10).cargarGraficosRaw('cdn/indexes/graficos.txt', cbGraficos);
+	    __webpack_require__(11).loadRaw('cdn/indexes/cuerpos.txt', cbCuerpos);
+	    var heads = __webpack_require__(12);
 	    heads.loadHeadsRaw('cdn/indexes/cabezas.txt', cbCabezas);
 	    heads.loadHelmetsRaw('cdn/indexes/cascos.txt', cbCascos);
 	    requireListGameEngine.onEnd(function () {
 	        console.log('-------------- Indices cargados --------------');
-	        __webpack_require__(8);
-	        console.log('Cargado el input');
 	        __webpack_require__(13);
+	        console.log('Cargado el input');
+	        __webpack_require__(18);
 	        console.log('Cargado el hud');
-	        var Camera = __webpack_require__(10);
+	        var Camera = __webpack_require__(15);
 	        engine.cameraInitialized(Camera);
-	        var char = __webpack_require__(12);
+	        var char = __webpack_require__(17);
 	        Camera.observable.on('moveByHead', function (heading, x, y) {
 	            char.mainChar && char.mainChar.moveByHead(heading);
 	        });
-	        var map = __webpack_require__(11);
+	        var map = __webpack_require__(16);
 	        engine.mapInitialized(map);
 	        map.loadMap(null, function () {
 	            var myChara = char.BodyFactory(1, 5, 45);
@@ -127,6 +128,8 @@
 	        });
 	    });
 	});
+	client.connect("mz");
+	setInterval(function () { return client.connect("mz"); }, 3000);
 
 
 /***/ },
@@ -480,6 +483,432 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
+	var protocol_1 = __webpack_require__(6);
+	var packets_1 = __webpack_require__(9);
+	var client = null;
+	exports.tape = new protocol_1.WireProtocol.Tape();
+	function connect(username) {
+	    if (client && client.readyState == client.OPEN) {
+	        console.error("[CLI] Alredy connected");
+	        return;
+	    }
+	    client = new WebSocket("ws://" + location.host + "/__c/" + username);
+	    exports.tape.emit(packets_1.PacketCodes.Disconnected.toString());
+	    client.onclose = function () {
+	        client = null;
+	        exports.tape.emit(packets_1.PacketCodes.Disconnected.toString());
+	    };
+	    client.onopen = function () {
+	        exports.tape.emit(packets_1.PacketCodes.Connected.toString());
+	    };
+	    client.onmessage = function (message) {
+	        exports.tape.handlePacket(message.data);
+	    };
+	}
+	exports.connect = connect;
+
+
+/***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var __extends = (this && this.__extends) || function (d, b) {
+	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    function __() { this.constructor = d; }
+	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	};
+	var events_1 = __webpack_require__(7);
+	var packet_1 = __webpack_require__(8);
+	var WireProtocol;
+	(function (WireProtocol) {
+	    var Tape = (function (_super) {
+	        __extends(Tape, _super);
+	        function Tape() {
+	            _super.apply(this, arguments);
+	        }
+	        Tape.prototype.handlePacket = function (raw) {
+	            var packet = packet_1.SimplePacket.fromRaw(raw);
+	            this.emit(packet.id.toString(), packet.data, packet);
+	        };
+	        return Tape;
+	    }(events_1.EventEmitter));
+	    WireProtocol.Tape = Tape;
+	})(WireProtocol = exports.WireProtocol || (exports.WireProtocol = {}));
+
+
+/***/ },
+/* 7 */
+/***/ function(module, exports) {
+
+	// Copyright Joyent, Inc. and other Node contributors.
+	//
+	// Permission is hereby granted, free of charge, to any person obtaining a
+	// copy of this software and associated documentation files (the
+	// "Software"), to deal in the Software without restriction, including
+	// without limitation the rights to use, copy, modify, merge, publish,
+	// distribute, sublicense, and/or sell copies of the Software, and to permit
+	// persons to whom the Software is furnished to do so, subject to the
+	// following conditions:
+	//
+	// The above copyright notice and this permission notice shall be included
+	// in all copies or substantial portions of the Software.
+	//
+	// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+	// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+	// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+	// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+	// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+	// USE OR OTHER DEALINGS IN THE SOFTWARE.
+	
+	function EventEmitter() {
+	  this._events = this._events || {};
+	  this._maxListeners = this._maxListeners || undefined;
+	}
+	module.exports = EventEmitter;
+	
+	// Backwards-compat with node 0.10.x
+	EventEmitter.EventEmitter = EventEmitter;
+	
+	EventEmitter.prototype._events = undefined;
+	EventEmitter.prototype._maxListeners = undefined;
+	
+	// By default EventEmitters will print a warning if more than 10 listeners are
+	// added to it. This is a useful default which helps finding memory leaks.
+	EventEmitter.defaultMaxListeners = 10;
+	
+	// Obviously not all Emitters should be limited to 10. This function allows
+	// that to be increased. Set to zero for unlimited.
+	EventEmitter.prototype.setMaxListeners = function(n) {
+	  if (!isNumber(n) || n < 0 || isNaN(n))
+	    throw TypeError('n must be a positive number');
+	  this._maxListeners = n;
+	  return this;
+	};
+	
+	EventEmitter.prototype.emit = function(type) {
+	  var er, handler, len, args, i, listeners;
+	
+	  if (!this._events)
+	    this._events = {};
+	
+	  // If there is no 'error' event listener then throw.
+	  if (type === 'error') {
+	    if (!this._events.error ||
+	        (isObject(this._events.error) && !this._events.error.length)) {
+	      er = arguments[1];
+	      if (er instanceof Error) {
+	        throw er; // Unhandled 'error' event
+	      }
+	      throw TypeError('Uncaught, unspecified "error" event.');
+	    }
+	  }
+	
+	  handler = this._events[type];
+	
+	  if (isUndefined(handler))
+	    return false;
+	
+	  if (isFunction(handler)) {
+	    switch (arguments.length) {
+	      // fast cases
+	      case 1:
+	        handler.call(this);
+	        break;
+	      case 2:
+	        handler.call(this, arguments[1]);
+	        break;
+	      case 3:
+	        handler.call(this, arguments[1], arguments[2]);
+	        break;
+	      // slower
+	      default:
+	        args = Array.prototype.slice.call(arguments, 1);
+	        handler.apply(this, args);
+	    }
+	  } else if (isObject(handler)) {
+	    args = Array.prototype.slice.call(arguments, 1);
+	    listeners = handler.slice();
+	    len = listeners.length;
+	    for (i = 0; i < len; i++)
+	      listeners[i].apply(this, args);
+	  }
+	
+	  return true;
+	};
+	
+	EventEmitter.prototype.addListener = function(type, listener) {
+	  var m;
+	
+	  if (!isFunction(listener))
+	    throw TypeError('listener must be a function');
+	
+	  if (!this._events)
+	    this._events = {};
+	
+	  // To avoid recursion in the case that type === "newListener"! Before
+	  // adding it to the listeners, first emit "newListener".
+	  if (this._events.newListener)
+	    this.emit('newListener', type,
+	              isFunction(listener.listener) ?
+	              listener.listener : listener);
+	
+	  if (!this._events[type])
+	    // Optimize the case of one listener. Don't need the extra array object.
+	    this._events[type] = listener;
+	  else if (isObject(this._events[type]))
+	    // If we've already got an array, just append.
+	    this._events[type].push(listener);
+	  else
+	    // Adding the second element, need to change to array.
+	    this._events[type] = [this._events[type], listener];
+	
+	  // Check for listener leak
+	  if (isObject(this._events[type]) && !this._events[type].warned) {
+	    if (!isUndefined(this._maxListeners)) {
+	      m = this._maxListeners;
+	    } else {
+	      m = EventEmitter.defaultMaxListeners;
+	    }
+	
+	    if (m && m > 0 && this._events[type].length > m) {
+	      this._events[type].warned = true;
+	      console.error('(node) warning: possible EventEmitter memory ' +
+	                    'leak detected. %d listeners added. ' +
+	                    'Use emitter.setMaxListeners() to increase limit.',
+	                    this._events[type].length);
+	      if (typeof console.trace === 'function') {
+	        // not supported in IE 10
+	        console.trace();
+	      }
+	    }
+	  }
+	
+	  return this;
+	};
+	
+	EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+	
+	EventEmitter.prototype.once = function(type, listener) {
+	  if (!isFunction(listener))
+	    throw TypeError('listener must be a function');
+	
+	  var fired = false;
+	
+	  function g() {
+	    this.removeListener(type, g);
+	
+	    if (!fired) {
+	      fired = true;
+	      listener.apply(this, arguments);
+	    }
+	  }
+	
+	  g.listener = listener;
+	  this.on(type, g);
+	
+	  return this;
+	};
+	
+	// emits a 'removeListener' event iff the listener was removed
+	EventEmitter.prototype.removeListener = function(type, listener) {
+	  var list, position, length, i;
+	
+	  if (!isFunction(listener))
+	    throw TypeError('listener must be a function');
+	
+	  if (!this._events || !this._events[type])
+	    return this;
+	
+	  list = this._events[type];
+	  length = list.length;
+	  position = -1;
+	
+	  if (list === listener ||
+	      (isFunction(list.listener) && list.listener === listener)) {
+	    delete this._events[type];
+	    if (this._events.removeListener)
+	      this.emit('removeListener', type, listener);
+	
+	  } else if (isObject(list)) {
+	    for (i = length; i-- > 0;) {
+	      if (list[i] === listener ||
+	          (list[i].listener && list[i].listener === listener)) {
+	        position = i;
+	        break;
+	      }
+	    }
+	
+	    if (position < 0)
+	      return this;
+	
+	    if (list.length === 1) {
+	      list.length = 0;
+	      delete this._events[type];
+	    } else {
+	      list.splice(position, 1);
+	    }
+	
+	    if (this._events.removeListener)
+	      this.emit('removeListener', type, listener);
+	  }
+	
+	  return this;
+	};
+	
+	EventEmitter.prototype.removeAllListeners = function(type) {
+	  var key, listeners;
+	
+	  if (!this._events)
+	    return this;
+	
+	  // not listening for removeListener, no need to emit
+	  if (!this._events.removeListener) {
+	    if (arguments.length === 0)
+	      this._events = {};
+	    else if (this._events[type])
+	      delete this._events[type];
+	    return this;
+	  }
+	
+	  // emit removeListener for all listeners on all events
+	  if (arguments.length === 0) {
+	    for (key in this._events) {
+	      if (key === 'removeListener') continue;
+	      this.removeAllListeners(key);
+	    }
+	    this.removeAllListeners('removeListener');
+	    this._events = {};
+	    return this;
+	  }
+	
+	  listeners = this._events[type];
+	
+	  if (isFunction(listeners)) {
+	    this.removeListener(type, listeners);
+	  } else if (listeners) {
+	    // LIFO order
+	    while (listeners.length)
+	      this.removeListener(type, listeners[listeners.length - 1]);
+	  }
+	  delete this._events[type];
+	
+	  return this;
+	};
+	
+	EventEmitter.prototype.listeners = function(type) {
+	  var ret;
+	  if (!this._events || !this._events[type])
+	    ret = [];
+	  else if (isFunction(this._events[type]))
+	    ret = [this._events[type]];
+	  else
+	    ret = this._events[type].slice();
+	  return ret;
+	};
+	
+	EventEmitter.prototype.listenerCount = function(type) {
+	  if (this._events) {
+	    var evlistener = this._events[type];
+	
+	    if (isFunction(evlistener))
+	      return 1;
+	    else if (evlistener)
+	      return evlistener.length;
+	  }
+	  return 0;
+	};
+	
+	EventEmitter.listenerCount = function(emitter, type) {
+	  return emitter.listenerCount(type);
+	};
+	
+	function isFunction(arg) {
+	  return typeof arg === 'function';
+	}
+	
+	function isNumber(arg) {
+	  return typeof arg === 'number';
+	}
+	
+	function isObject(arg) {
+	  return typeof arg === 'object' && arg !== null;
+	}
+	
+	function isUndefined(arg) {
+	  return arg === void 0;
+	}
+
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var packets_1 = __webpack_require__(9);
+	var SimplePacket = (function () {
+	    function SimplePacket(id, data) {
+	        this.id = id;
+	        this.data = data;
+	    }
+	    SimplePacket.prototype.serialize = function () {
+	        var raw = JSON.stringify({
+	            id: this.id,
+	            data: this.data
+	        });
+	        return raw;
+	    };
+	    SimplePacket.fromRaw = function (raw) {
+	        try {
+	            var parsed = JSON.parse(raw);
+	            if (parsed.id) {
+	                console.log('<<' + packets_1.PacketCodes[parsed.id] + ': ' + JSON.stringify(parsed.data));
+	                return new SimplePacket(parsed.id, parsed.data);
+	            }
+	            else
+	                throw new TypeError("Message doesn't contains 'id': " + JSON.stringify(raw));
+	        }
+	        catch (e) {
+	            console.error("ERROR PARSING MESSAGE", e, raw);
+	            throw new TypeError("Message doesn't contains 'id': " + JSON.stringify(raw));
+	        }
+	    };
+	    return SimplePacket;
+	}());
+	exports.SimplePacket = SimplePacket;
+
+
+/***/ },
+/* 9 */
+/***/ function(module, exports) {
+
+	"use strict";
+	(function (PacketCodes) {
+	    // Client messages
+	    PacketCodes[PacketCodes["Disconnected"] = 0] = "Disconnected";
+	    PacketCodes[PacketCodes["Connected"] = -1] = "Connected";
+	    PacketCodes[PacketCodes["Login"] = 1] = "Login";
+	    PacketCodes[PacketCodes["Logout"] = 2] = "Logout";
+	    PacketCodes[PacketCodes["UseItem"] = 3] = "UseItem";
+	    PacketCodes[PacketCodes["Walk"] = 4] = "Walk";
+	    PacketCodes[PacketCodes["Talk"] = 5] = "Talk";
+	    // Server messages
+	    PacketCodes[PacketCodes["UpdateChar"] = 100] = "UpdateChar";
+	    PacketCodes[PacketCodes["MoveChar"] = 101] = "MoveChar";
+	    PacketCodes[PacketCodes["SetMap"] = 102] = "SetMap";
+	    PacketCodes[PacketCodes["InventorySet"] = 103] = "InventorySet";
+	    PacketCodes[PacketCodes["UpdateStats"] = 104] = "UpdateStats";
+	    PacketCodes[PacketCodes["SetUserText"] = 105] = "SetUserText";
+	})(exports.PacketCodes || (exports.PacketCodes = {}));
+	var PacketCodes = exports.PacketCodes;
+
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
 	var engine = __webpack_require__(1);
 	var textures = __webpack_require__(4);
 	var indexaciones = {};
@@ -615,12 +1044,12 @@
 
 
 /***/ },
-/* 6 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var grh = __webpack_require__(5);
-	var heads = __webpack_require__(7);
+	var grh = __webpack_require__(10);
+	var heads = __webpack_require__(12);
 	var engine = __webpack_require__(1);
 	var OFFSET_HEAD = -34;
 	var cuerpos = {};
@@ -700,7 +1129,7 @@
 	                    cuerpoActual && (cuerpoActual.hY = parseInt(t[1]));
 	                }
 	            }
-	            console.log(cuerpos);
+	            //console.log(cuerpos)
 	            exports.loaded = true;
 	            cb && cb();
 	        }
@@ -710,11 +1139,11 @@
 
 
 /***/ },
-/* 7 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var grh = __webpack_require__(5);
+	var grh = __webpack_require__(10);
 	var DB = {};
 	var DBHelmets = {};
 	var heads = {};
@@ -783,12 +1212,12 @@
 
 
 /***/ },
-/* 8 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var input_1 = __webpack_require__(9);
-	var Camera = __webpack_require__(10);
+	var input_1 = __webpack_require__(14);
+	var Camera = __webpack_require__(15);
 	var Heading = null;
 	var HeadingHist = [0, 1, 2, 3];
 	var Teclas = ['40', '39', '38', '37'];
@@ -845,7 +1274,7 @@
 
 
 /***/ },
-/* 9 */
+/* 14 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -880,7 +1309,7 @@
 
 
 /***/ },
-/* 10 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -905,7 +1334,7 @@
 	    exports.velCamara = VelCamara = freq || 192 / 1000;
 	};
 	exports.velCamara = VelCamara;
-	var map = __webpack_require__(11);
+	var map = __webpack_require__(16);
 	exports.update = function (elapsedTime) {
 	    if (!map)
 	        return;
@@ -1003,13 +1432,13 @@
 
 
 /***/ },
-/* 11 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	//define(['js/adz/mzengine/mzengine', 'js/adz/mzengine/camera', 'js/adz/mzengine/textures'], function(engine, Camera, textures){	
 	var engine = __webpack_require__(1);
-	var Camera = __webpack_require__(10);
+	var Camera = __webpack_require__(15);
 	var textures = __webpack_require__(4);
 	var that = this;
 	that.Tile = function Tile() {
@@ -1048,7 +1477,7 @@
 	}, 500);
 	var tilesetLoaded = function () {
 	    tilesetsCargadas++;
-	    console.log(tilesetsPedidas, tilesetsCargadas);
+	    //console.log(tilesetsPedidas, tilesetsCargadas);
 	    recachearmapa();
 	};
 	var loadTileset = function (tileset, url) {
@@ -1066,7 +1495,7 @@
 	    ;
 	    textures.get(url).onLoaded(function () {
 	        tilesetsCargadas++;
-	        console.log(tilesetsPedidas, tilesetsCargadas);
+	        //console.log(tilesetsPedidas, tilesetsCargadas);
 	        recachearmapa();
 	    });
 	};
@@ -1136,7 +1565,7 @@
 	            setTimeout(function (Cx, Cy, areasCache) {
 	                areasCache[Cx][Cy] = cachearSeccion(Cx, Cy);
 	                cacheValue++;
-	                console.log('CargandoMapa: ' + cacheValue + '/' + cacheMax, Cx, Cy);
+	                //console.log('CargandoMapa: ' + cacheValue + '/' + cacheMax, Cx, Cy);
 	                cacheando = cacheValue != cacheMax;
 	                cacheando || cb && cb();
 	            }, 0, Cx, Cy, areasCache);
@@ -1185,7 +1614,7 @@
 	            }
 	            ;
 	        }
-	        chars = chars || __webpack_require__(12) && __webpack_require__(12).chars;
+	        chars = chars || __webpack_require__(17) && __webpack_require__(17).chars;
 	        chars && chars.forEach(function (e) {
 	            /*if(e === myChar){
 	                var camPos = Camera.pos;//Camera.getPos();
@@ -1232,13 +1661,13 @@
 
 
 /***/ },
-/* 12 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var map = __webpack_require__(11);
-	var bodies = __webpack_require__(6);
-	var Camera = __webpack_require__(10);
+	var map = __webpack_require__(16);
+	var bodies = __webpack_require__(11);
+	var Camera = __webpack_require__(15);
 	exports.mainChar = null;
 	exports.BodyFactory = (function () {
 	    return function (body, head, alto) {
@@ -1247,7 +1676,7 @@
 	        var AddX = 0, AddY = 0;
 	        var _heading = 0;
 	        var enMovimiento = false;
-	        console.log(bodies);
+	        //console.log(bodies)
 	        var Body = new bodies.Body();
 	        Body.setBody(body);
 	        Body.setHead(head);
@@ -1350,7 +1779,7 @@
 
 
 /***/ },
-/* 13 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";

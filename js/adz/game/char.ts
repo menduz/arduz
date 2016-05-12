@@ -19,7 +19,7 @@ export var BodyFactory = (function () {
 
 		var enMovimiento = false;
 
-		console.log(bodies)
+		//console.log(bodies)
 
 		var Body = new bodies.Body();
 

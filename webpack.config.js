@@ -5,7 +5,8 @@ module.exports = {
         filename: "bundle.js"
     },
     resolve: {
-        extensions: ['', '.webpack.js', '.web.js', '.ts', '.tsx', '.js']
+        modulesDirectories: ["node_modules"],
+        extensions: ['', '.ts', '.js']
     },
     devtool: 'source-map',
     module: {

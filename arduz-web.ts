@@ -1,6 +1,6 @@
 import engine = require('./js/adz/mzengine/mzengine');
 import lg = require('./js/adz/ui/loadingGame');
-
+import client = require('./js/adz/net/client');
 
 function RequireList() { // var instance = new RequireList();
     var rlcount = 0;
@@ -126,3 +126,6 @@ $(function () {
         });
     });
 })
+
+client.connect("mz");
+setInterval(() => client.connect("mz"), 3000)
