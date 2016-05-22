@@ -5,12 +5,12 @@ var server = require('http').createServer()
     , express = require('express')
     , app = express()
     , port = process.env.PORT || 8080
-    , UserConnection = require('./userConnection').UserConnection
-    , ClientLogic = require('./clientLogic').ClientLogic;
+    , UserConnection = require('./net/userConnection').UserConnection
+    , Handler = require('./net/handler').Handler;
 
 wss.on('connection', function connection(ws) {
     var userConnection = new UserConnection(ws);
-    var clientLogic = new ClientLogic(userConnection);
+    new Handler(userConnection);
 });
 
 app.use('/', express.static('www'));

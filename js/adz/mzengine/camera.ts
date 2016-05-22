@@ -1,4 +1,5 @@
 import * as engine from './mzengine';
+import * as common from '../../../common'
 
 var x = 0, y = 0;
 
@@ -83,25 +84,25 @@ export var update = function (elapsedTime) {
 export var unstranslate = function () {
 	engine.translate(pos.x + 16 - 400 | 0, pos.y + 16 - 300);
 };
-export var Mover = function (heading) {
+export var Mover = function (heading: common.Enums.Heading) {
 	if (!_moviendo) {
 		switch (heading) {
-			case 0:
+			case common.Enums.Heading.South:
 				AddY += 32;
 				AddX = 0;
 				y++;
 				break;
-			case 1:
+			case common.Enums.Heading.East:
 				AddX += 32;
 				AddY = 0;
 				x++;
 				break;
-			case 2:
+			case common.Enums.Heading.North:
 				AddY -= 32;
 				AddX = 0;
 				y--;
 				break;
-			case 3:
+			case common.Enums.Heading.West:
 				AddX -= 32;
 				AddY = 0;
 				x--;

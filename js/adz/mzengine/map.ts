@@ -10,20 +10,18 @@ that.Tile = function Tile() {
 }
 
 that.Tile.prototype.piso = null;
-
 that.Tile.prototype.capa1 = null;
 that.Tile.prototype.capa2 = null;
 that.Tile.prototype.capa3 = null;
 that.Tile.prototype.capa4 = null;
-
 that.Tile.prototype.char = null;
 
 
 var cacheTileSize = 16;
-var TileSize = 32;
-var cacheSize = cacheTileSize * TileSize;
+export var tileSize = 32;
+var cacheSize = cacheTileSize * tileSize;
 
-var mapSize = 250;
+export var mapSize = 250;
 
 var cacheando = false;
 var cacheMax = 1;
@@ -74,7 +72,7 @@ var loadTileset = function (tileset, url) {
 	var ct = 0;
 	for (var y = 0; y < 16; y++) {
 		for (var x = 0; x < 32; x++) {
-			Tileset[tileset].push(textures.Grh(url, TileSize, TileSize, x * TileSize, y * TileSize));
+			Tileset[tileset].push(textures.Grh(url, tileSize, tileSize, x * tileSize, y * tileSize));
 		};
 	};
 
@@ -108,10 +106,10 @@ function cachearSeccion(Cx, Cy) {
 	for (var x = c.minX; x < c.maxX; x++) {
 		for (var y = c.minY; y < c.maxY; y++) {
 			mapData[x][y] && mapData[x][y].piso && mapData[x][y].piso(tX, tY);
-			tY += TileSize;
+			tY += tileSize;
 		};
 		tY = 0;
-		tX += TileSize;
+		tX += tileSize;
 	};
 
 	tX = 0;
@@ -119,11 +117,11 @@ function cachearSeccion(Cx, Cy) {
 
 	if (c.minX / cacheTileSize > 1) {
 		c.minX -= 1;
-		tX -= TileSize;
+		tX -= tileSize;
 	}
 	if (c.minY / cacheTileSize > 1) {
 		c.minY -= 1;
-		tY -= TileSize;
+		tY -= tileSize;
 	}
 
 	if (c.maxX < mapSize) c.maxX += 1;
@@ -133,10 +131,10 @@ function cachearSeccion(Cx, Cy) {
 		for (var x = c.minX; x < c.maxX; x++) {
 			mapData[x][y] && mapData[x][y].capa1 && mapData[x][y].capa1(tX, tY);
 			mapData[x][y] && mapData[x][y].capa2 && mapData[x][y].capa2.centrado(tX, tY);
-			tY += TileSize;
+			tY += tileSize;
 		};
 		tY = 0;
-		tX += TileSize;
+		tX += tileSize;
 	};
 
 	engine.setContext(null);
@@ -174,101 +172,93 @@ var cachearMapa = function (cb) {
 
 var chars = null;
 
-export = {
-	tileSize: TileSize,
-	mapSize: mapSize,
-	init: function () {
-		armarCapas(mapSize, mapSize);
 
-		//this.loadMap();
-	},
-	render: function (elapsedTime) {
 
-		if (cacheando) {
-			engine.renderThisUI(function (ctx) {
-				var circ = Math.PI * 2;
-				var quart = Math.PI / 2;
+export function init() {
+	armarCapas(mapSize, mapSize);
 
-				ctx.strokeStyle = '#CC9933';
-				ctx.lineCap = 'square';
-				ctx.lineWidth = 10.0;
+	//this.loadMap();
+}
+export function render(elapsedTime) {
 
-				ctx.beginPath();
-				ctx.arc(400, 300, 70, -quart, circ * (cacheValue / cacheMax) - quart, false);
-				ctx.stroke();
-			})
+	if (cacheando) {
+		engine.renderThisUI(function (ctx) {
+			var circ = Math.PI * 2;
+			var quart = Math.PI / 2;
 
-			return;
-		}
+			ctx.strokeStyle = '#CC9933';
+			ctx.lineCap = 'square';
+			ctx.lineWidth = 10.0;
 
-		var minX = boundingBox.minX - cacheTileSize;
-		var minY = boundingBox.minY - cacheTileSize;
-
-		for (var x = 0; x < tamanioCache; x++) {
-			for (var y = 0; y < tamanioCache; y++) {
-				var tX = x * cacheTileSize;
-				var tY = y * cacheTileSize;
-
-				if (tX < boundingBox.minX || tX > boundingBox.maxX || tY < boundingBox.minY || tY > boundingBox.maxY) continue;
-
-				areasCache[x][y] && areasCache[x][y](x * cacheSize, y * cacheSize);
-			};
-		}
-
-		for (let y = boundingBox.minY; y < boundingBox.maxY; y++) {
-			for (let x = boundingBox.minX; x < boundingBox.maxX; x++) {
-				mapData[x][y].capa3 && mapData[x][y].capa3.vertical(x * TileSize, y * TileSize);
-			};
-		}
-
-		chars = chars || require('../game/char') && require('../game/char').chars;
-		chars && chars.forEach(function (e) {
-			/*if(e === myChar){
-				var camPos = Camera.pos;//Camera.getPos();
-				e.render(elapsedTime, camPos.x, camPos.y);
-			} else*/
-			e.render(elapsedTime);
+			ctx.beginPath();
+			ctx.arc(400, 300, 70, -quart, circ * (cacheValue / cacheMax) - quart, false);
+			ctx.stroke();
 		})
 
+		return;
+	}
 
-	},
-	loadMap: function (data, cb) {
-		cacheando = true;
-		cacheMax = 1;
-		cacheValue = 0;
+	var minX = boundingBox.minX - cacheTileSize;
+	var minY = boundingBox.minY - cacheTileSize;
 
-		var listaGraficos = [
-			'cdn/grh/tilesets/1.png'
-		];
+	for (var x = 0; x < tamanioCache; x++) {
+		for (var y = 0; y < tamanioCache; y++) {
+			var tX = x * cacheTileSize;
+			var tY = y * cacheTileSize;
 
-		textures.require(listaGraficos, function () {
-			loadTileset(0, 'cdn/grh/tilesets/1.png');
+			if (tX < boundingBox.minX || tX > boundingBox.maxX || tY < boundingBox.minY || tY > boundingBox.maxY) continue;
 
-			armarCapas(mapSize, mapSize);
+			areasCache[x][y] && areasCache[x][y](x * cacheSize, y * cacheSize);
+		};
+	}
 
-			for (var x = 0; x < mapSize; x++) {
-				for (var y = 0; y < mapSize; y++) {
-					mapData[x][y].piso = Tileset[0][/*Math.random()*32|0*/x % 4 + (y % 4) * 32];
-				}
-			}
-			/*
-							for(var i = 1; i < 100; i++){
-								mapData[(Math.random() * 50) | 0][(Math.random() * 50) | 0].capa1 =  Tileset[1][48 + (Math.random() * 16) | 0];
-								mapData[(Math.random() * 50) | 0][(Math.random() * 50) | 0].capa2 =  Tileset[1][15];
-							}
-			
-							mapData[0][0].capa3 =  textures.Grh('cdn/grh/png/7001.png',256,256,0,0,1);
-			
-							for(var i = 1; i < 20; i++){
-								mapData[(Math.random() * 50) | 0][(Math.random() * 50) | 0].capa3 =  textures.Grh('cdn/grh/png/7001.png',256,256,0,0,1);
-							}
-							*/
+	for (let y = boundingBox.minY; y < boundingBox.maxY; y++) {
+		for (let x = boundingBox.minX; x < boundingBox.maxX; x++) {
+			mapData[x][y].capa3 && mapData[x][y].capa3.vertical(x * tileSize, y * tileSize);
+		};
+	}
 
-			recachearmapa(cb);
-		}, function progreso(total, cantidad) {
-			cacheMax = total;
-			cacheValue = cantidad;
-		})
+	chars = chars || require('../game/char') && require('../game/char').chars;
+
+	for (let char in chars) {
+		chars[char].render(elapsedTime);
 	}
 }
-//})
+export function loadMap(data, cb) {
+	cacheando = true;
+	cacheMax = 1;
+	cacheValue = 0;
+
+	var listaGraficos = [
+		'cdn/grh/tilesets/1.png'
+	];
+
+	textures.require(listaGraficos, function () {
+		loadTileset(0, 'cdn/grh/tilesets/1.png');
+
+		armarCapas(mapSize, mapSize);
+
+		for (var x = 0; x < mapSize; x++) {
+			for (var y = 0; y < mapSize; y++) {
+				mapData[x][y].piso = Tileset[0][/*Math.random()*32|0*/x % 4 + (y % 4) * 32];
+			}
+		}
+
+		for (var i = 1; i < 100; i++) {
+			mapData[(Math.random() * 50) | 0][(Math.random() * 50) | 0].capa1 = Tileset[0][48 + (Math.random() * 16) | 0];
+			mapData[(Math.random() * 50) | 0][(Math.random() * 50) | 0].capa2 = Tileset[0][15];
+		}
+		/*
+						mapData[0][0].capa3 =  textures.Grh('cdn/grh/png/7001.png',256,256,0,0,1);
+		
+						for(var i = 1; i < 20; i++){
+							mapData[(Math.random() * 50) | 0][(Math.random() * 50) | 0].capa3 =  textures.Grh('cdn/grh/png/7001.png',256,256,0,0,1);
+						}
+						*/
+
+		recachearmapa(cb);
+	}, function progreso(total, cantidad) {
+		cacheMax = total;
+		cacheValue = cantidad;
+	})
+}

@@ -1,4 +1,4 @@
-[Head3]
+[HEAD3]
 Head3=3003	 ' arriba
 Head2=3001	 ' derecha
 Head1=3000	 ' abajo
@@ -10,7 +10,7 @@ Head2=3005	 ' derecha
 Head1=3004	 ' abajo
 Head4=3006	 ' izq
 
-[Head1]
+[HEAD1]
 Head3=3011	 ' arriba
 Head2=3009	 ' derecha
 Head1=3008	 ' abajo

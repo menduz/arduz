@@ -1,6 +1,7 @@
 import engine = require('./js/adz/mzengine/mzengine');
 import lg = require('./js/adz/ui/loadingGame');
-import client = require('./js/adz/net/client');
+import {chatPromptInstance} from './js/adz/ui/dom_chat';
+import {KeyStates} from './js/adz/mzengine/input';
 
 function RequireList() { // var instance = new RequireList();
     var rlcount = 0;
@@ -44,6 +45,9 @@ var requireList = RequireList;
 
 $(function () {
     engine.init(document.getElementById('juego'));
+    KeyStates.appendTo(document);
+
+    chatPromptInstance.appendTo(document.getElementById('juego').parentElement);
 
     lg.show();
 
@@ -66,10 +70,7 @@ $(function () {
     })
 
     require('./js/adz/game/grh').cargarGraficosRaw('cdn/indexes/graficos.txt', cbGraficos);
-
-
     require('./js/adz/game/body').loadRaw('cdn/indexes/cuerpos.txt', cbCuerpos);
-
 
     var heads = require('./js/adz/game/head')
 
@@ -95,14 +96,13 @@ $(function () {
             char.mainChar && char.mainChar.moveByHead(heading);
         })
 
-
-
-
-
-
-
         var map = require('./js/adz/mzengine/map');
         engine.mapInitialized(map);
+
+        require('./js/adz/net/client').connect("mz");
+
+        setInterval(() => require('./js/adz/net/client').connect("mz"), 3000)
+        /*
         map.loadMap(null, function () {
 
             var myChara = char.BodyFactory(1, 5, 45);
@@ -124,8 +124,8 @@ $(function () {
 
 
         });
+        */
     });
 })
 
-client.connect("mz");
-setInterval(() => client.connect("mz"), 3000)
+

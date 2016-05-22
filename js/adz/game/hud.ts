@@ -12,5 +12,5 @@ engine.renderHud = function () {
 
 	frameInterno(0, 0);
 	hotBar(200, 600 - 64);
-	barras(600, 600 - 64);
+	//barras(600, 600 - 64);
 }

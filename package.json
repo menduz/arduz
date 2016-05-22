@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "test",
-    "build": "webpack",
-    "server": "webpack && tsc -p tsconfig-server.json && node server/server.js"
+    "build": "tsc -p tsconfig-server.json && webpack",
+    "server": "npm run build && node server/server.js"
   },
   "repository": {
     "type": "git",

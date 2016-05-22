@@ -113,7 +113,7 @@ export function drawTextStroked(text, x, y, centered, color, strokeColor) {
 
 function drawFPS(elapsedTime) {
 
-	drawText("FPS: " + realFPS + " - " + Math.round(1000 / elapsedTime), 40, 30, false);
+	drawText("FPS: " + realFPS, 753, 20, false);
 }
 
 export var tick = 0;

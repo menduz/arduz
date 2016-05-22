@@ -1,0 +1,101 @@
+{
+    "Warrior": {
+        "ModEvasion": 1,
+        "ModWeapon": 0.9,
+        "ModBow": 0.8,
+        "ModWrestling": 0.6,
+        "ModDmgWeapons": 1.1,
+        "ModDmgBow": 0.9,
+        "ModDmgWrestling": 0.4,
+        "ModShield": 1,
+        "ModHealth": 10
+    },
+    "Haunter": {
+        "ModEvasion": 1,
+        "ModWeapon": 0.9,
+        "ModBow": 0.8,
+        "ModWrestling": 0.6,
+        "ModDmgWeapons": 1.1,
+        "ModDmgBow": 0.9,
+        "ModDmgWrestling": 0.4,
+        "ModShield": 1,
+        "ModHealth": 10
+    },
+    "Paladin": {
+        "ModEvasion": 1,
+        "ModWeapon": 0.9,
+        "ModBow": 0.8,
+        "ModWrestling": 0.6,
+        "ModDmgWeapons": 1.1,
+        "ModDmgBow": 0.9,
+        "ModDmgWrestling": 0.4,
+        "ModShield": 1,
+        "ModHealth": 10
+    },
+    "Bandit": {
+        "ModEvasion": 1,
+        "ModWeapon": 0.9,
+        "ModBow": 0.8,
+        "ModWrestling": 0.6,
+        "ModDmgWeapons": 1.1,
+        "ModDmgBow": 0.9,
+        "ModDmgWrestling": 0.4,
+        "ModShield": 1,
+        "ModHealth": 10
+    },
+    "Murder": {
+        "ModEvasion": 1,
+        "ModWeapon": 0.9,
+        "ModBow": 0.8,
+        "ModWrestling": 0.6,
+        "ModDmgWeapons": 1.1,
+        "ModDmgBow": 0.9,
+        "ModDmgWrestling": 0.4,
+        "ModShield": 1,
+        "ModHealth": 10
+    },
+    "Cleric": {
+        "ModEvasion": 1,
+        "ModWeapon": 0.9,
+        "ModBow": 0.8,
+        "ModWrestling": 0.6,
+        "ModDmgWeapons": 1.1,
+        "ModDmgBow": 0.9,
+        "ModDmgWrestling": 0.4,
+        "ModShield": 1,
+        "ModHealth": 10
+    },
+    "Bard": {
+        "ModEvasion": 1,
+        "ModWeapon": 0.9,
+        "ModBow": 0.8,
+        "ModWrestling": 0.6,
+        "ModDmgWeapons": 1.1,
+        "ModDmgBow": 0.9,
+        "ModDmgWrestling": 0.4,
+        "ModShield": 1,
+        "ModHealth": 10
+    },
+    "Wizzard": {
+        "ModEvasion": 1,
+        "ModWeapon": 0.9,
+        "ModBow": 0.8,
+        "ModWrestling": 0.6,
+        "ModDmgWeapons": 1.1,
+        "ModDmgBow": 0.9,
+        "ModDmgWrestling": 0.4,
+        "ModShield": 1,
+        "ModHealth": 10
+    },
+    "Druid": {
+        "ModEvasion": 1,
+        "ModWeapon": 0.9,
+        "ModBow": 0.8,
+        "ModWrestling": 0.6,
+        "ModDmgWeapons": 1.1,
+        "ModDmgBow": 0.9,
+        "ModDmgWrestling": 0.4,
+        "ModShield": 1,
+        "ModHealth": 10
+    }
+}

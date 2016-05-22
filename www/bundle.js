@@ -47,7 +47,8 @@
 	"use strict";
 	var engine = __webpack_require__(1);
 	var lg = __webpack_require__(3);
-	var client = __webpack_require__(5);
+	var dom_chat_1 = __webpack_require__(5);
+	var input_1 = __webpack_require__(6);
 	function RequireList() {
 	    var rlcount = 0;
 	    var pending = 0;
@@ -81,6 +82,8 @@
 	var requireList = RequireList;
 	$(function () {
 	    engine.init(document.getElementById('juego'));
+	    input_1.KeyStates.appendTo(document);
+	    dom_chat_1.chatPromptInstance.appendTo(document.getElementById('juego').parentElement);
 	    lg.show();
 	    var requireListGameEngine = requireList();
 	    var cbGraficos = requireListGameEngine(function () {
@@ -95,41 +98,52 @@
 	    var cbCascos = requireListGameEngine(function () {
 	        console.info('Cascos cargados!');
 	    });
-	    __webpack_require__(10).cargarGraficosRaw('cdn/indexes/graficos.txt', cbGraficos);
-	    __webpack_require__(11).loadRaw('cdn/indexes/cuerpos.txt', cbCuerpos);
-	    var heads = __webpack_require__(12);
+	    __webpack_require__(7).cargarGraficosRaw('cdn/indexes/graficos.txt', cbGraficos);
+	    __webpack_require__(8).loadRaw('cdn/indexes/cuerpos.txt', cbCuerpos);
+	    var heads = __webpack_require__(9);
 	    heads.loadHeadsRaw('cdn/indexes/cabezas.txt', cbCabezas);
 	    heads.loadHelmetsRaw('cdn/indexes/cascos.txt', cbCascos);
 	    requireListGameEngine.onEnd(function () {
 	        console.log('-------------- Indices cargados --------------');
-	        __webpack_require__(13);
+	        __webpack_require__(10);
 	        console.log('Cargado el input');
-	        __webpack_require__(18);
+	        __webpack_require__(22);
 	        console.log('Cargado el hud');
-	        var Camera = __webpack_require__(15);
+	        var Camera = __webpack_require__(11);
 	        engine.cameraInitialized(Camera);
-	        var char = __webpack_require__(17);
+	        var char = __webpack_require__(20);
 	        Camera.observable.on('moveByHead', function (heading, x, y) {
 	            char.mainChar && char.mainChar.moveByHead(heading);
 	        });
-	        var map = __webpack_require__(16);
+	        var map = __webpack_require__(19);
 	        engine.mapInitialized(map);
+	        __webpack_require__(23).connect("mz");
+	        setInterval(function () { return __webpack_require__(23).connect("mz"); }, 3000);
+	        /*
 	        map.loadMap(null, function () {
+	
 	            var myChara = char.BodyFactory(1, 5, 45);
 	            char.chars.push(myChara);
+	
 	            setInterval(function () {
-	                myChara.moveByHead(((Math.random() * 700) % 4) | 0);
-	            }, 192);
+	                myChara.moveByHead(((Math.random() * 700) % 4) | 0)
+	            }, 192)
+	
 	            var mainChar = char.BodyFactory(1, 4, 45);
-	            mainChar.body.name = "menduz";
+	
+	            mainChar.body.name = "menduz"
+	
 	            char.chars.push(mainChar);
+	
 	            char.mainChar = mainChar;
-	            lg.hide();
+	
+	            lg.hide()
+	
+	
 	        });
+	        */
 	    });
 	});
-	client.connect("mz");
-	setInterval(function () { return client.connect("mz"); }, 3000);
 
 
 /***/ },
@@ -219,7 +233,7 @@
 	}
 	exports.drawTextStroked = drawTextStroked;
 	function drawFPS(elapsedTime) {
-	    drawText("FPS: " + realFPS + " - " + Math.round(1000 / elapsedTime), 40, 30, false);
+	    drawText("FPS: " + realFPS, 753, 20, false);
 	}
 	exports.tick = 0;
 	exports.init = function (_canvas, w, h) {
@@ -480,36 +494,774 @@
 
 /***/ },
 /* 5 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
 	"use strict";
-	var protocol_1 = __webpack_require__(6);
-	var packets_1 = __webpack_require__(9);
-	var client = null;
-	exports.tape = new protocol_1.WireProtocol.Tape();
-	function connect(username) {
-	    if (client && client.readyState == client.OPEN) {
-	        console.error("[CLI] Alredy connected");
-	        return;
+	var __extends = (this && this.__extends) || function (d, b) {
+	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    function __() { this.constructor = d; }
+	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	};
+	var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+	    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+	    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+	    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+	    return c > 3 && r && Object.defineProperty(target, key, r), r;
+	};
+	var __metadata = (this && this.__metadata) || function (k, v) {
+	    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+	};
+	var MAX_MESSAGE_COUNT = 6;
+	var ChatPrompt = (function (_super) {
+	    __extends(ChatPrompt, _super);
+	    function ChatPrompt() {
+	        var _this = this;
+	        _super.call(this);
+	        this.show = mz.delayer(function () {
+	            if (!_this.chatVisible) {
+	                _this.chatVisible = true;
+	                _this.input.value = '';
+	                _this.input.focus();
+	            }
+	        }, 100);
+	        this.messages = new mz.Collection;
+	        this.input = this.find('input')[0];
+	        setInterval(function () { return _this.messages.length && _this.messages.removeAt(0); }, 30000);
+	        this.chatVisible = false;
 	    }
-	    client = new WebSocket("ws://" + location.host + "/__c/" + username);
-	    exports.tape.emit(packets_1.PacketCodes.Disconnected.toString());
-	    client.onclose = function () {
-	        client = null;
-	        exports.tape.emit(packets_1.PacketCodes.Disconnected.toString());
+	    ChatPrompt.prototype.hookKeys = function (e) {
+	        if (e.event.which == 13 && this.chatVisible) {
+	            this.show.cancel();
+	        }
 	    };
-	    client.onopen = function () {
-	        exports.tape.emit(packets_1.PacketCodes.Connected.toString());
+	    ChatPrompt.prototype.keyPressed = function (e) {
+	        if (e.event.which == 13) {
+	            if ($(this.input).val().length) {
+	                this.emit('chat', $(this.input).val());
+	            }
+	            this.chatVisible = false;
+	            this.show.cancel();
+	        }
 	    };
-	    client.onmessage = function (message) {
-	        exports.tape.handlePacket(message.data);
+	    ChatPrompt.prototype.pushMessage = function (message) {
+	        this.messages.push(message);
+	        while (this.messages.length > MAX_MESSAGE_COUNT) {
+	            this.messages.removeAt(0);
+	        }
 	    };
-	}
-	exports.connect = connect;
+	    __decorate([
+	        ChatPrompt.proxy, 
+	        __metadata('design:type', Boolean)
+	    ], ChatPrompt.prototype, "chatVisible", void 0);
+	    __decorate([
+	        ChatPrompt.proxy, 
+	        __metadata('design:type', mz.Collection)
+	    ], ChatPrompt.prototype, "messages", void 0);
+	    ChatPrompt = __decorate([
+	        ChatPrompt.Template("\n    <div style=\"position: absolute; top:0; left: 0; width: 800px\">\n        <mz-repeat list=\"{this.messages}\" tag=\"div\" style=\"\n            opacity: 0.5; \n            font-size: 0.8em; \n            padding: 20px; \n            pointer-events: none; \n            user-select: none;\n            -webkit-user-select: none;\n        \">\n            <div style=\"\n                max-width: 760px;\n                text-overflow: ellipsis;\n                overflow: hidden;\n                word-break: break-all;\n                max-height: 2.4em;\n                color: {scope.color || 'white'}\n            \"><b>{scope.nick}</b> {scope.text}</div>\n        </mz-repeat>\n        \n        <input visible=\"{this.chatVisible}\" name=\"chatInput\" onkeyup=\"{this.keyPressed}\" onkeydown=\"{this.hookKeys}\" placeholder=\"Chat\" style=\"\n            position: absolute;\n            background: rgba(100,100,100,0.5);\n            color: white;\n            top: 3px;\n            left: 3px;\n            width: 794px;\n            border: 0;\n            border-bottom: 1px solid rgba(50,50,50,0.8);\n            padding: 7px 11px;\n            outline: none;\n            box-shadow: 0px 0px 4px 1px black inset;\n        \"/>\n    </div>\n"),
+	        ChatPrompt.ConfigureUnwrapped, 
+	        __metadata('design:paramtypes', [])
+	    ], ChatPrompt);
+	    return ChatPrompt;
+	}(mz.widgets.BasePagelet));
+	exports.ChatPrompt = ChatPrompt;
+	exports.chatPromptInstance = new ChatPrompt;
 
 
 /***/ },
 /* 6 */
+/***/ function(module, exports) {
+
+	"use strict";
+	var __extends = (this && this.__extends) || function (d, b) {
+	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    function __() { this.constructor = d; }
+	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	};
+	var keyStateObserver = (function (_super) {
+	    __extends(keyStateObserver, _super);
+	    function keyStateObserver() {
+	        _super.apply(this, arguments);
+	        this.keyStates = {};
+	    }
+	    keyStateObserver.prototype.keyDown = function (cual) {
+	        this.keyStates[cual] = true;
+	        this.emit(cual, true);
+	        this.emit('key_down', cual);
+	        this.emit('key_down_' + cual);
+	    };
+	    keyStateObserver.prototype.keyUp = function (cual) {
+	        this.keyStates[cual] = false;
+	        this.emit(cual, false);
+	        this.emit('key_up', cual);
+	        this.emit('key_up_' + cual);
+	    };
+	    keyStateObserver.prototype.check = function (cual) {
+	        return !!this.keyStates[cual];
+	    };
+	    keyStateObserver.prototype.appendTo = function (element) {
+	        var _this = this;
+	        $(element || document).keydown(function (e) { return _this.keyDown(e.keyCode.toString()); });
+	        $(element || document).keyup(function (e) { return _this.keyUp(e.keyCode.toString()); });
+	    };
+	    return keyStateObserver;
+	}(mz.EventDispatcher));
+	exports.KeyStates = new keyStateObserver;
+
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var engine = __webpack_require__(1);
+	var textures = __webpack_require__(4);
+	var indexaciones = {};
+	var realizados = {};
+	this.loaded = false;
+	exports.Grafico = function Grafico(base) {
+	    this.frames = [];
+	    if (base.l && base.l.length > 0) {
+	        for (var i in base.l) {
+	            this.frames.push(obtenerGrafico(base.l[i]));
+	        }
+	    }
+	    else if (base.i) {
+	        this.frames.push(obtenerGrafico(base.i));
+	    }
+	    this.width = this.frames[0].width;
+	    this.height = this.frames[0].height;
+	    this.centerX = (this.width / 2 - 16) | 0;
+	    this.centerY = (this.height / 2 - 16) | 0;
+	    this.framesCount = this.frames.length;
+	    this.time = base.t;
+	};
+	exports.Grafico.prototype.frames = null;
+	exports.Grafico.prototype.framesCount = null;
+	exports.Grafico.prototype.time = null;
+	exports.Grafico.prototype.startTime = null;
+	exports.Grafico.prototype.width = 0;
+	exports.Grafico.prototype.height = 0;
+	exports.Grafico.prototype.centerX = 0;
+	exports.Grafico.prototype.centerY = 0;
+	exports.Grafico.prototype.quiet = function (x, y) {
+	    // Renders the first frame of the graphic
+	    this.framesCount && this.frames[0](x, y);
+	};
+	exports.Grafico.prototype.animated = function (x, y) {
+	    // Renders the graphic animated if it has more tha one frame.
+	    if (this.framesCount == 1)
+	        return this.quiet(x, y);
+	    return this.frames[(((engine.tick % (this.time || 200)) / (this.time || 200)) * this.framesCount | 0)](x, y);
+	};
+	exports.Grafico.prototype.quietVertical = function (x, y) {
+	    // Renders the first frame of the graphic
+	    this.framesCount && this.frames[0].vertical(x, y);
+	};
+	exports.Grafico.prototype.animatedVertical = function (x, y) {
+	    // Renders the graphic animated if it has more tha one frame.
+	    if (this.framesCount == 1)
+	        return this.quietVertical(x, y);
+	    var frame = Math.round(((engine.tick % (this.time || 200)) / (this.time || 200)) * this.framesCount) % this.framesCount;
+	    return this.frames[frame] && this.frames[frame].vertical(x, y);
+	};
+	exports.Grafico.prototype.quietCentered = function (x, y) {
+	    // Renders the first frame of the graphic
+	    this.framesCount && this.frames[0].centrado(x, y);
+	};
+	exports.Grafico.prototype.animatedCentered = function (x, y) {
+	    // Renders the graphic animated if it has more tha one frame.
+	    if (this.framesCount == 1)
+	        return this.quietCentered(x, y);
+	    var frame = Math.round(((engine.tick % (this.time || 200)) / (this.time || 200)) * this.framesCount) % this.framesCount;
+	    return this.frames[frame] && this.frames[frame].centrado(x, y);
+	};
+	function obtenerGrafico(index) {
+	    if (index in indexaciones) {
+	        var g = indexaciones[index];
+	        if (g.g) {
+	            return textures.Grh('cdn/grh/png/' + g.g + '.png', g.w, g.h, g.x, g.y);
+	        }
+	        else if (g.l) {
+	            throw "No se puede usar una animacion como frame de una animacion. frame=" + index;
+	        }
+	    }
+	    else
+	        console.error("Grafico no indexado: " + index);
+	}
+	exports.get = function (index) {
+	    if (!(index in indexaciones))
+	        throw "Grafico " + index + " no indexado";
+	    return realizados[index] || (realizados[index] = new exports.Grafico(indexaciones[index]));
+	};
+	exports.indexarFrame = function (index, grafico, srcX, srcY, w, h) {
+	    indexaciones[index] = {
+	        g: grafico,
+	        l: null,
+	        t: null,
+	        x: parseInt(srcX),
+	        y: parseInt(srcY),
+	        w: parseInt(w),
+	        h: parseInt(h),
+	        i: index
+	    };
+	};
+	exports.indexarAnimacion = function (index, frames, tiempo) {
+	    indexaciones[index] = {
+	        g: null,
+	        l: frames,
+	        t: parseInt(tiempo || 200),
+	        x: null,
+	        y: null,
+	        w: null,
+	        h: null,
+	        i: index
+	    };
+	};
+	exports.loaded = null;
+	exports.cargarGraficosRaw = function (url, cb) {
+	    var grhHeader = /^Grh(\d+)=1-(\d+)-(\d+)-(\d+)-(\d+)-(\d+)/;
+	    var animHeader = /^Grh(\d+)=(\d+)-(.*)-(.+)$/;
+	    exports.loaded = false;
+	    $.ajax({
+	        url: url || 'cdn/indexes/graficos.txt',
+	        method: 'GET',
+	        success: function (e) {
+	            var datos = e.split(/(\n)/g);
+	            for (var i in datos) {
+	                var t = null, d = mz.trim(datos[i]);
+	                if (d && d.length) {
+	                    if (t = grhHeader.exec(d)) {
+	                        exports.indexarFrame(t[1], t[2], t[3], t[4], t[5], t[6]);
+	                    }
+	                    else {
+	                        if (t = animHeader.exec(d)) {
+	                            exports.indexarAnimacion(t[1], t[3].split(/-/g), parseInt(t[4]));
+	                        }
+	                    }
+	                }
+	            }
+	            exports.loaded = true;
+	            cb && cb();
+	        }
+	    });
+	};
+
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var grh = __webpack_require__(7);
+	var heads = __webpack_require__(9);
+	var engine = __webpack_require__(1);
+	var OFFSET_HEAD = -34;
+	var cuerpos = {};
+	exports.Body = function Body() {
+	};
+	exports.Body.prototype.rightHand = null;
+	exports.Body.prototype.leftHand = null;
+	exports.Body.prototype.head = null;
+	exports.Body.prototype.helmet = null;
+	exports.Body.prototype.aura = null;
+	exports.Body.prototype.heading = 1;
+	exports.Body.prototype.grhs = null;
+	exports.Body.prototype.name = null;
+	exports.Body.prototype.headOffsetX = 0;
+	exports.Body.prototype.headOffsetY = 0;
+	exports.Body.prototype.setHead = function (headIndex) {
+	    this.head = heads.get(headIndex);
+	};
+	exports.Body.prototype.setHelmet = function (headIndex) {
+	    this.helmet = heads.getHelmet(headIndex);
+	};
+	exports.Body.prototype.setBody = function (bodyIndex) {
+	    this.grhs = null;
+	    this.headOffsetX = 0;
+	    this.headOffsetY = 0;
+	    if (bodyIndex in cuerpos) {
+	        this.headOffsetX = cuerpos[bodyIndex].hX;
+	        this.headOffsetY = cuerpos[bodyIndex].hY;
+	        this.grhs = {
+	            0: grh.get(cuerpos[bodyIndex].g[1]),
+	            1: grh.get(cuerpos[bodyIndex].g[2]),
+	            2: grh.get(cuerpos[bodyIndex].g[3]),
+	            3: grh.get(cuerpos[bodyIndex].g[4])
+	        };
+	    }
+	};
+	exports.Body.prototype.render = function (x, y, heading, anim, animEscudo) {
+	    this.heading = heading | 0;
+	    this.aura && this.aura.centered(x, y);
+	    this.grhs && this.grhs[this.heading] && this.grhs[this.heading][anim ? 'animatedVertical' : 'quietVertical'](x, y);
+	    this.head && this.head && this.head.render(x + this.headOffsetX, y + this.headOffsetY + OFFSET_HEAD, this.heading);
+	    this.helmet && this.helmet && this.helmet.render(x + this.headOffsetX, y + OFFSET_HEAD + this.headOffsetY, this.heading);
+	    this.rightHand && this.rightHand[this.heading] && this.rightHand[this.heading][animEscudo ? 'animatedVertical' : 'quietVertical'](x, y);
+	    this.leftHand && this.leftHand[this.heading] && this.leftHand[this.heading][animEscudo ? 'animatedVertical' : 'quietVertical'](x, y);
+	    this.name && engine.renderTextCentered(this.name, x + 16, y + 24);
+	};
+	exports.loadRaw = function (url, cb) {
+	    var bodyHeader = /\[BODY(\d+)\]/;
+	    var grhHeader = /WALK(1|2|3|4)=(\d+)/;
+	    var headOffsetHeaderX = /HeadOffsetX=(.+)/;
+	    var headOffsetHeaderY = /HeadOffsetY=(.+)/;
+	    this.loaded = false;
+	    $.ajax({
+	        url: url || 'cdn/indexes/cuerpos.txt',
+	        method: 'GET',
+	        success: function (e) {
+	            var datos = e.split(/(\n)/g);
+	            var cuerpoActual = null;
+	            for (var i in datos) {
+	                var t = void 0;
+	                if (t = bodyHeader.exec(datos[i])) {
+	                    cuerpoActual = {
+	                        g: { 1: 0, 2: 0, 3: 0, 4: 0 },
+	                        hX: 0,
+	                        hY: 0,
+	                        i: t[1]
+	                    };
+	                    cuerpos[t[1]] = cuerpoActual;
+	                }
+	                else if (t = grhHeader.exec(datos[i])) {
+	                    cuerpoActual && (cuerpoActual.g[t[1]] = parseInt(t[2]));
+	                }
+	                else if (t = headOffsetHeaderX.exec(datos[i])) {
+	                    cuerpoActual && (cuerpoActual.hX = parseInt(t[1]));
+	                }
+	                else if (t = headOffsetHeaderY.exec(datos[i])) {
+	                    cuerpoActual && (cuerpoActual.hY = parseInt(t[1]));
+	                }
+	            }
+	            //console.log(cuerpos)
+	            exports.loaded = true;
+	            cb && cb();
+	        }
+	    });
+	};
+	exports.loaded = false;
+
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var grh = __webpack_require__(7);
+	var DB = {};
+	var DBHelmets = {};
+	var heads = {};
+	var helmets = {};
+	exports.Head = function Head(head) {
+	    this.grh = {
+	        0: grh.get(head.g[1]),
+	        1: grh.get(head.g[2]),
+	        2: grh.get(head.g[3]),
+	        3: grh.get(head.g[4])
+	    };
+	};
+	exports.Head.prototype.grh = null;
+	exports.Head.prototype.render = function (x, y, heading) {
+	    this.grh && this.grh[heading] && this.grh[heading].quiet(x - this.grh[heading].centerX, y);
+	};
+	exports.Head.prototype.renderBottomAligned = function (x, y, heading) {
+	    this.grh && this.grh[heading] && this.grh[heading].quiet(x - this.grh[heading].centerX, y - this.grh[heading].height);
+	};
+	exports.get = function (index) {
+	    return heads[index] && (DB[index] = DB[index] || new exports.Head(heads[index])) || null;
+	};
+	exports.getHelmet = function (index) {
+	    return helmets[index] && (DBHelmets[index] = DBHelmets[index] || new exports.Head(helmets[index])) || null;
+	};
+	function parseInto(obj, e) {
+	    var headHeader = /\[HEAD(\d+)\]/;
+	    var grhHeader = /Head(1|2|3|4)=(\d+)/;
+	    var data = e.split(/(\n)/g);
+	    var actualHead = null;
+	    for (var i in data) {
+	        var d = mz.trim(data[i]);
+	        var t = void 0;
+	        if (t = headHeader.exec(d)) {
+	            actualHead = {
+	                g: { 1: 0, 2: 0, 3: 0, 4: 0 },
+	                i: t[1]
+	            };
+	            obj[t[1]] = actualHead;
+	        }
+	        else if (t = grhHeader.exec(d)) {
+	            actualHead && (actualHead.g[t[1]] = parseInt(t[2]));
+	        }
+	    }
+	}
+	exports.loadHeadsRaw = function (url, cb) {
+	    $.ajax({
+	        url: url || 'cdn/indexes/cabezas.txt',
+	        method: 'GET',
+	        success: function (e) {
+	            parseInto(heads, e);
+	            cb && cb();
+	        }
+	    });
+	};
+	exports.loadHelmetsRaw = function (url, cb) {
+	    $.ajax({
+	        url: url || 'cdn/indexes/cascos.txt',
+	        method: 'GET',
+	        success: function (e) {
+	            parseInto(helmets, e);
+	            cb && cb();
+	        }
+	    });
+	};
+
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var input_1 = __webpack_require__(6);
+	var Camera = __webpack_require__(11);
+	var common = __webpack_require__(12);
+	var dom_chat_1 = __webpack_require__(5);
+	var Heading = null;
+	var HeadingHist = [0, 1, 2, 3];
+	var Teclas = ['40', '39', '38', '37'];
+	var ultimoHeading = null;
+	input_1.KeyStates.on('37', function (b) {
+	    ultimoHeading != Heading && (ultimoHeading = Heading);
+	    Heading = common.Enums.Heading.West;
+	});
+	input_1.KeyStates.on('38', function (b) {
+	    ultimoHeading != Heading && (ultimoHeading = Heading);
+	    Heading = common.Enums.Heading.North;
+	});
+	input_1.KeyStates.on('39', function (b) {
+	    ultimoHeading != Heading && (ultimoHeading = Heading);
+	    Heading = common.Enums.Heading.East;
+	});
+	input_1.KeyStates.on('40', function (b) {
+	    ultimoHeading != Heading && (ultimoHeading = Heading);
+	    Heading = common.Enums.Heading.South;
+	});
+	input_1.KeyStates.on('key_down_13', function () { return dom_chat_1.chatPromptInstance.show(); });
+	Camera.bindFn(function () {
+	    if (!Camera.isMoving()) {
+	        if (!input_1.KeyStates.check(Teclas[Heading])) {
+	            if (input_1.KeyStates.check(Teclas[ultimoHeading])) {
+	                var t = ultimoHeading;
+	                ultimoHeading != Heading && (ultimoHeading = Heading);
+	                Heading = t;
+	            }
+	            else if (input_1.KeyStates.check(Teclas[0])) {
+	                ultimoHeading != Heading && (ultimoHeading = Heading);
+	                Heading = common.Enums.Heading.South;
+	            }
+	            else if (input_1.KeyStates.check(Teclas[1])) {
+	                ultimoHeading != Heading && (ultimoHeading = Heading);
+	                Heading = common.Enums.Heading.East;
+	            }
+	            else if (input_1.KeyStates.check(Teclas[2])) {
+	                ultimoHeading != Heading && (ultimoHeading = Heading);
+	                Heading = common.Enums.Heading.North;
+	            }
+	            else if (input_1.KeyStates.check(Teclas[3])) {
+	                ultimoHeading != Heading && (ultimoHeading = Heading);
+	                Heading = common.Enums.Heading.West;
+	            }
+	            else {
+	                Heading = null;
+	            }
+	        }
+	        if (Heading != null) {
+	            Camera.Mover(Heading);
+	        }
+	    }
+	});
+
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var engine = __webpack_require__(1);
+	var common = __webpack_require__(12);
+	var x = 0, y = 0;
+	var width = 0, height = 0, ctx = null;
+	var _moviendo = false, AddX = 0, AddY = 0, _continuar = false;
+	var UltimoHeading = -1;
+	var VelCamara = 192 / 1000;
+	exports.boundingBox = {
+	    minX: 0,
+	    minY: 0,
+	    maxX: 0,
+	    maxY: 0
+	};
+	exports.pos = { x: 0, y: 0 };
+	var _check_camera = null;
+	exports.bindFn = function (cb) {
+	    _check_camera = cb || null;
+	};
+	exports.setSpeed = function (freq) {
+	    exports.velCamara = VelCamara = freq || 192 / 1000;
+	};
+	exports.velCamara = VelCamara;
+	var map = __webpack_require__(19);
+	exports.update = function (elapsedTime) {
+	    if (!map)
+	        return;
+	    if (_moviendo) {
+	        if (AddX > 0) {
+	            AddX -= elapsedTime * VelCamara;
+	            if (AddX <= 0) {
+	                _moviendo = false;
+	            }
+	        }
+	        if (AddX < 0) {
+	            AddX += elapsedTime * VelCamara;
+	            if (AddX >= 0) {
+	                _moviendo = false;
+	            }
+	        }
+	        if (AddY > 0) {
+	            AddY -= elapsedTime * VelCamara;
+	            if (AddY <= 0) {
+	                _moviendo = false;
+	            }
+	        }
+	        if (AddY < 0) {
+	            AddY += elapsedTime * VelCamara;
+	            if (AddY >= 0) {
+	                _moviendo = false;
+	            }
+	        }
+	        if (!_moviendo) {
+	            _check_camera && _check_camera();
+	            if (!_moviendo) {
+	                AddY = 0;
+	                AddX = 0;
+	            }
+	        }
+	    }
+	    else
+	        _check_camera && _check_camera();
+	    exports.boundingBox.minX = Math.max(Math.round(x - 50 - 2), 0);
+	    exports.boundingBox.minY = Math.max(Math.round(y - 38 - 2), 0);
+	    exports.boundingBox.maxX = Math.min(Math.round(x + 50 + 2), map.mapSize);
+	    exports.boundingBox.maxY = Math.min(Math.round(y + 38 + 2), map.mapSize);
+	    exports.pos.x = (x * 32 - AddX) | 0;
+	    exports.pos.y = (y * 32 - AddY) | 0;
+	    engine.translate(-exports.pos.x - 16 + 400 | 0, -exports.pos.y - 16 + 300);
+	};
+	exports.unstranslate = function () {
+	    engine.translate(exports.pos.x + 16 - 400 | 0, exports.pos.y + 16 - 300);
+	};
+	exports.Mover = function (heading) {
+	    if (!_moviendo) {
+	        switch (heading) {
+	            case common.Enums.Heading.South:
+	                AddY += 32;
+	                AddX = 0;
+	                y++;
+	                break;
+	            case common.Enums.Heading.East:
+	                AddX += 32;
+	                AddY = 0;
+	                x++;
+	                break;
+	            case common.Enums.Heading.North:
+	                AddY -= 32;
+	                AddX = 0;
+	                y--;
+	                break;
+	            case common.Enums.Heading.West:
+	                AddX -= 32;
+	                AddY = 0;
+	                x--;
+	                break;
+	        }
+	        exports.observable.trigger('moveByHead', heading, x, y);
+	        exports.observable.trigger('position', x, y, exports.pos);
+	    }
+	    _moviendo = true;
+	};
+	exports.setPos = function (_x, _y) {
+	    x = _x | 0;
+	    y = _y | 0;
+	    AddY = AddX = 0;
+	    _moviendo = false;
+	    exports.pos.x = (x * 32 - AddX) | 0;
+	    exports.pos.y = (y * 32 - AddY) | 0;
+	};
+	exports.isMoving = function () { return _moviendo; };
+	exports.getPos = function () {
+	    return {
+	        x: exports.pos.x,
+	        y: exports.pos.y
+	    };
+	};
+	exports.observable = new mz.EventDispatcher();
+
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var Helpers = __webpack_require__(13);
+	exports.Helpers = Helpers;
+	var Enums = __webpack_require__(14);
+	exports.Enums = Enums;
+	var SimplePacket_1 = __webpack_require__(15);
+	exports.SimplePacket = SimplePacket_1.SimplePacket;
+	var Packets = __webpack_require__(16);
+	exports.Packets = Packets;
+	var WireProtocol_1 = __webpack_require__(17);
+	exports.WireProtocol = WireProtocol_1.WireProtocol;
+
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var enums = __webpack_require__(14);
+	function headToPos(x, y, heading) {
+	    switch (heading) {
+	        case enums.Heading.East:
+	            return {
+	                x: x + 1,
+	                y: y
+	            };
+	        case enums.Heading.West:
+	            return {
+	                x: x - 1,
+	                y: y
+	            };
+	        case enums.Heading.North:
+	            return {
+	                x: x,
+	                y: y - 1
+	            };
+	        case enums.Heading.South:
+	            return {
+	                x: x,
+	                y: y + 1
+	            };
+	    }
+	    return {
+	        x: x,
+	        y: y
+	    };
+	}
+	exports.headToPos = headToPos;
+
+
+/***/ },
+/* 14 */
+/***/ function(module, exports) {
+
+	"use strict";
+	(function (Heading) {
+	    Heading[Heading["North"] = 2] = "North";
+	    Heading[Heading["South"] = 0] = "South";
+	    Heading[Heading["East"] = 1] = "East";
+	    Heading[Heading["West"] = 3] = "West";
+	})(exports.Heading || (exports.Heading = {}));
+	var Heading = exports.Heading;
+
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var packets_1 = __webpack_require__(16);
+	var SimplePacket = (function () {
+	    function SimplePacket(id, data) {
+	        this.id = id;
+	        this.data = data;
+	    }
+	    SimplePacket.prototype.serialize = function () {
+	        var raw = JSON.stringify({
+	            id: this.id,
+	            data: this.data
+	        });
+	        return raw;
+	    };
+	    SimplePacket.fromRaw = function (raw) {
+	        try {
+	            var parsed = JSON.parse(raw);
+	            if (parsed.id) {
+	                console.log('>>' + packets_1.PacketCodes[parsed.id] + ': ' + JSON.stringify(parsed.data));
+	                return new SimplePacket(parsed.id, parsed.data);
+	            }
+	            else
+	                throw new TypeError("Message doesn't contains 'id': " + JSON.stringify(raw));
+	        }
+	        catch (e) {
+	            console.error("ERROR PARSING MESSAGE", e, raw);
+	            throw new TypeError("Message doesn't contains 'id': " + JSON.stringify(raw));
+	        }
+	    };
+	    return SimplePacket;
+	}());
+	exports.SimplePacket = SimplePacket;
+
+
+/***/ },
+/* 16 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var SimplePacket_1 = __webpack_require__(15);
+	(function (PacketCodes) {
+	    // Client messages
+	    PacketCodes[PacketCodes["CLI_Login"] = 0] = "CLI_Login";
+	    PacketCodes[PacketCodes["CLI_Initialize"] = 1] = "CLI_Initialize";
+	    PacketCodes[PacketCodes["CLI_Relogin"] = 2] = "CLI_Relogin";
+	    PacketCodes[PacketCodes["CLI_Logout"] = 3] = "CLI_Logout";
+	    PacketCodes[PacketCodes["CLI_UseItem"] = 4] = "CLI_UseItem";
+	    PacketCodes[PacketCodes["CLI_Walk"] = 5] = "CLI_Walk";
+	    PacketCodes[PacketCodes["CLI_Talk"] = 6] = "CLI_Talk";
+	    PacketCodes[PacketCodes["CLI_SetHeading"] = 7] = "CLI_SetHeading";
+	    // Server messages
+	    PacketCodes[PacketCodes["EVT_Disconnected"] = 8] = "EVT_Disconnected";
+	    PacketCodes[PacketCodes["EVT_Connected"] = 9] = "EVT_Connected";
+	    PacketCodes[PacketCodes["SV_Welcome"] = 10] = "SV_Welcome";
+	    PacketCodes[PacketCodes["SV_UpdateChar"] = 11] = "SV_UpdateChar";
+	    PacketCodes[PacketCodes["SV_MoveChar"] = 12] = "SV_MoveChar";
+	    PacketCodes[PacketCodes["SV_SetMap"] = 13] = "SV_SetMap";
+	    PacketCodes[PacketCodes["SV_InventorySet"] = 14] = "SV_InventorySet";
+	    PacketCodes[PacketCodes["SV_UpdateStats"] = 15] = "SV_UpdateStats";
+	    PacketCodes[PacketCodes["SV_SetUserText"] = 16] = "SV_SetUserText";
+	    PacketCodes[PacketCodes["SV_SetPlayerKey"] = 17] = "SV_SetPlayerKey";
+	    PacketCodes[PacketCodes["SV_SetHeading"] = 18] = "SV_SetHeading";
+	    PacketCodes[PacketCodes["SV_RemoveChar"] = 19] = "SV_RemoveChar";
+	    PacketCodes[PacketCodes["SV_Talk"] = 20] = "SV_Talk";
+	})(exports.PacketCodes || (exports.PacketCodes = {}));
+	var PacketCodes = exports.PacketCodes;
+	function createPacket(packet, data) {
+	    return new SimplePacket_1.SimplePacket(packet, data);
+	}
+	exports.SV_UpdateChar = function (data) { return createPacket(PacketCodes.SV_UpdateChar, data); };
+	exports.SV_SetMap = function (data) { return createPacket(PacketCodes.SV_SetMap, data); };
+	exports.SV_SetHeading = function (data) { return createPacket(PacketCodes.SV_SetHeading, data); };
+	exports.CLI_SetHeading = function (data) { return createPacket(PacketCodes.CLI_SetHeading, data); };
+	exports.SV_RemoveChar = function (data) { return createPacket(PacketCodes.SV_RemoveChar, data); };
+	exports.SV_MoveChar = function (data) { return createPacket(PacketCodes.SV_MoveChar, data); };
+	exports.SV_Welcome = function (data) { return createPacket(PacketCodes.SV_Welcome, data); };
+	exports.SV_SetPlayerKey = function (data) { return createPacket(PacketCodes.SV_SetPlayerKey, data); };
+	exports.CLI_Walk = function (data) { return createPacket(PacketCodes.CLI_Walk, data); };
+	exports.CLI_Initialize = function (data) { return createPacket(PacketCodes.CLI_Initialize, data); };
+	exports.CLI_Talk = function (data) { return createPacket(PacketCodes.CLI_Talk, data); };
+	exports.SV_Talk = function (data) { return createPacket(PacketCodes.SV_Talk, data); };
+
+
+/***/ },
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -518,8 +1270,8 @@
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var events_1 = __webpack_require__(7);
-	var packet_1 = __webpack_require__(8);
+	var events_1 = __webpack_require__(18);
+	var SimplePacket_1 = __webpack_require__(15);
 	var WireProtocol;
 	(function (WireProtocol) {
 	    var Tape = (function (_super) {
@@ -528,17 +1280,42 @@
 	            _super.apply(this, arguments);
 	        }
 	        Tape.prototype.handlePacket = function (raw) {
-	            var packet = packet_1.SimplePacket.fromRaw(raw);
+	            var packet = SimplePacket_1.SimplePacket.fromRaw(raw);
+	            this.emit(Tape.ON_EVERY_CODE, packet.id, packet.data);
 	            this.emit(packet.id.toString(), packet.data, packet);
 	        };
+	        Tape.prototype.when = function (packet, callback) {
+	            this.on(packet.toString(), callback);
+	            return this;
+	        };
+	        Tape.prototype.onEvery = function (callback) {
+	            this.on(Tape.ON_EVERY_CODE, callback);
+	            return this;
+	        };
+	        Tape.ON_EVERY_CODE = '-1';
 	        return Tape;
 	    }(events_1.EventEmitter));
 	    WireProtocol.Tape = Tape;
+	    var TapeHandler = (function () {
+	        function TapeHandler(tape) {
+	            var _this = this;
+	            this.tape = tape;
+	            this.handlers = {};
+	            tape.onEvery(function (packet, data) {
+	                if (packet in _this.handlers)
+	                    _this.handlers[packet](data);
+	                else
+	                    console.error(packet + " NOT IMPLEMENTED!!!!");
+	            });
+	        }
+	        return TapeHandler;
+	    }());
+	    WireProtocol.TapeHandler = TapeHandler;
 	})(WireProtocol = exports.WireProtocol || (exports.WireProtocol = {}));
 
 
 /***/ },
-/* 7 */
+/* 18 */
 /***/ function(module, exports) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -842,603 +1619,13 @@
 
 
 /***/ },
-/* 8 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var packets_1 = __webpack_require__(9);
-	var SimplePacket = (function () {
-	    function SimplePacket(id, data) {
-	        this.id = id;
-	        this.data = data;
-	    }
-	    SimplePacket.prototype.serialize = function () {
-	        var raw = JSON.stringify({
-	            id: this.id,
-	            data: this.data
-	        });
-	        return raw;
-	    };
-	    SimplePacket.fromRaw = function (raw) {
-	        try {
-	            var parsed = JSON.parse(raw);
-	            if (parsed.id) {
-	                console.log('<<' + packets_1.PacketCodes[parsed.id] + ': ' + JSON.stringify(parsed.data));
-	                return new SimplePacket(parsed.id, parsed.data);
-	            }
-	            else
-	                throw new TypeError("Message doesn't contains 'id': " + JSON.stringify(raw));
-	        }
-	        catch (e) {
-	            console.error("ERROR PARSING MESSAGE", e, raw);
-	            throw new TypeError("Message doesn't contains 'id': " + JSON.stringify(raw));
-	        }
-	    };
-	    return SimplePacket;
-	}());
-	exports.SimplePacket = SimplePacket;
-
-
-/***/ },
-/* 9 */
-/***/ function(module, exports) {
-
-	"use strict";
-	(function (PacketCodes) {
-	    // Client messages
-	    PacketCodes[PacketCodes["Disconnected"] = 0] = "Disconnected";
-	    PacketCodes[PacketCodes["Connected"] = -1] = "Connected";
-	    PacketCodes[PacketCodes["Login"] = 1] = "Login";
-	    PacketCodes[PacketCodes["Logout"] = 2] = "Logout";
-	    PacketCodes[PacketCodes["UseItem"] = 3] = "UseItem";
-	    PacketCodes[PacketCodes["Walk"] = 4] = "Walk";
-	    PacketCodes[PacketCodes["Talk"] = 5] = "Talk";
-	    // Server messages
-	    PacketCodes[PacketCodes["UpdateChar"] = 100] = "UpdateChar";
-	    PacketCodes[PacketCodes["MoveChar"] = 101] = "MoveChar";
-	    PacketCodes[PacketCodes["SetMap"] = 102] = "SetMap";
-	    PacketCodes[PacketCodes["InventorySet"] = 103] = "InventorySet";
-	    PacketCodes[PacketCodes["UpdateStats"] = 104] = "UpdateStats";
-	    PacketCodes[PacketCodes["SetUserText"] = 105] = "SetUserText";
-	})(exports.PacketCodes || (exports.PacketCodes = {}));
-	var PacketCodes = exports.PacketCodes;
-
-
-/***/ },
-/* 10 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var engine = __webpack_require__(1);
-	var textures = __webpack_require__(4);
-	var indexaciones = {};
-	var realizados = {};
-	this.loaded = false;
-	exports.Grafico = function Grafico(base) {
-	    this.frames = [];
-	    if (base.l && base.l.length > 0) {
-	        for (var i in base.l) {
-	            this.frames.push(obtenerGrafico(base.l[i]));
-	        }
-	    }
-	    else if (base.i) {
-	        this.frames.push(obtenerGrafico(base.i));
-	    }
-	    this.width = this.frames[0].width;
-	    this.height = this.frames[0].height;
-	    this.centerX = (this.width / 2 - 16) | 0;
-	    this.centerY = (this.height / 2 - 16) | 0;
-	    this.framesCount = this.frames.length;
-	    this.time = base.t;
-	};
-	exports.Grafico.prototype.frames = null;
-	exports.Grafico.prototype.framesCount = null;
-	exports.Grafico.prototype.time = null;
-	exports.Grafico.prototype.startTime = null;
-	exports.Grafico.prototype.width = 0;
-	exports.Grafico.prototype.height = 0;
-	exports.Grafico.prototype.centerX = 0;
-	exports.Grafico.prototype.centerY = 0;
-	exports.Grafico.prototype.quiet = function (x, y) {
-	    // Renders the first frame of the graphic
-	    this.framesCount && this.frames[0](x, y);
-	};
-	exports.Grafico.prototype.animated = function (x, y) {
-	    // Renders the graphic animated if it has more tha one frame.
-	    if (this.framesCount == 1)
-	        return this.quiet(x, y);
-	    return this.frames[(((engine.tick % (this.time || 200)) / (this.time || 200)) * this.framesCount | 0)](x, y);
-	};
-	exports.Grafico.prototype.quietVertical = function (x, y) {
-	    // Renders the first frame of the graphic
-	    this.framesCount && this.frames[0].vertical(x, y);
-	};
-	exports.Grafico.prototype.animatedVertical = function (x, y) {
-	    // Renders the graphic animated if it has more tha one frame.
-	    if (this.framesCount == 1)
-	        return this.quietVertical(x, y);
-	    var frame = Math.round(((engine.tick % (this.time || 200)) / (this.time || 200)) * this.framesCount) % this.framesCount;
-	    return this.frames[frame] && this.frames[frame].vertical(x, y);
-	};
-	exports.Grafico.prototype.quietCentered = function (x, y) {
-	    // Renders the first frame of the graphic
-	    this.framesCount && this.frames[0].centrado(x, y);
-	};
-	exports.Grafico.prototype.animatedCentered = function (x, y) {
-	    // Renders the graphic animated if it has more tha one frame.
-	    if (this.framesCount == 1)
-	        return this.quietCentered(x, y);
-	    var frame = Math.round(((engine.tick % (this.time || 200)) / (this.time || 200)) * this.framesCount) % this.framesCount;
-	    return this.frames[frame] && this.frames[frame].centrado(x, y);
-	};
-	function obtenerGrafico(index) {
-	    if (index in indexaciones) {
-	        var g = indexaciones[index];
-	        if (g.g) {
-	            return textures.Grh('cdn/grh/png/' + g.g + '.png', g.w, g.h, g.x, g.y);
-	        }
-	        else if (g.l) {
-	            throw "No se puede usar una animacion como frame de una animacion. frame=" + index;
-	        }
-	    }
-	    else
-	        console.error("Grafico no indexado: " + index);
-	}
-	exports.get = function (index) {
-	    if (!(index in indexaciones))
-	        throw "Grafico " + index + " no indexado";
-	    return realizados[index] || (realizados[index] = new exports.Grafico(indexaciones[index]));
-	};
-	exports.indexarFrame = function (index, grafico, srcX, srcY, w, h) {
-	    indexaciones[index] = {
-	        g: grafico,
-	        l: null,
-	        t: null,
-	        x: parseInt(srcX),
-	        y: parseInt(srcY),
-	        w: parseInt(w),
-	        h: parseInt(h),
-	        i: index
-	    };
-	};
-	exports.indexarAnimacion = function (index, frames, tiempo) {
-	    indexaciones[index] = {
-	        g: null,
-	        l: frames,
-	        t: parseInt(tiempo || 200),
-	        x: null,
-	        y: null,
-	        w: null,
-	        h: null,
-	        i: index
-	    };
-	};
-	exports.loaded = null;
-	exports.cargarGraficosRaw = function (url, cb) {
-	    var grhHeader = /^Grh(\d+)=1-(\d+)-(\d+)-(\d+)-(\d+)-(\d+)/;
-	    var animHeader = /^Grh(\d+)=(\d+)-(.*)-(.+)$/;
-	    exports.loaded = false;
-	    $.ajax({
-	        url: url || 'cdn/indexes/graficos.txt',
-	        method: 'GET',
-	        success: function (e) {
-	            var datos = e.split(/(\n)/g);
-	            for (var i in datos) {
-	                var t = null, d = mz.trim(datos[i]);
-	                if (d && d.length) {
-	                    if (t = grhHeader.exec(d)) {
-	                        exports.indexarFrame(t[1], t[2], t[3], t[4], t[5], t[6]);
-	                    }
-	                    else {
-	                        if (t = animHeader.exec(d)) {
-	                            exports.indexarAnimacion(t[1], t[3].split(/-/g), parseInt(t[4]));
-	                        }
-	                    }
-	                }
-	            }
-	            exports.loaded = true;
-	            cb && cb();
-	        }
-	    });
-	};
-
-
-/***/ },
-/* 11 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var grh = __webpack_require__(10);
-	var heads = __webpack_require__(12);
-	var engine = __webpack_require__(1);
-	var OFFSET_HEAD = -34;
-	var cuerpos = {};
-	exports.Body = function Body() {
-	};
-	exports.Body.prototype.rightHand = null;
-	exports.Body.prototype.leftHand = null;
-	exports.Body.prototype.head = null;
-	exports.Body.prototype.helmet = null;
-	exports.Body.prototype.aura = null;
-	exports.Body.prototype.heading = 1;
-	exports.Body.prototype.grhs = null;
-	exports.Body.prototype.name = null;
-	exports.Body.prototype.headOffsetX = 0;
-	exports.Body.prototype.headOffsetY = 0;
-	exports.Body.prototype.setHead = function (headIndex) {
-	    this.head = heads.get(headIndex);
-	};
-	exports.Body.prototype.setHelmet = function (headIndex) {
-	    this.helmet = heads.getHelmet(headIndex);
-	};
-	exports.Body.prototype.setBody = function (bodyIndex) {
-	    this.grhs = null;
-	    this.headOffsetX = 0;
-	    this.headOffsetY = 0;
-	    if (bodyIndex in cuerpos) {
-	        this.headOffsetX = cuerpos[bodyIndex].hX;
-	        this.headOffsetY = cuerpos[bodyIndex].hY;
-	        this.grhs = {
-	            0: grh.get(cuerpos[bodyIndex].g[1]),
-	            1: grh.get(cuerpos[bodyIndex].g[2]),
-	            2: grh.get(cuerpos[bodyIndex].g[3]),
-	            3: grh.get(cuerpos[bodyIndex].g[4])
-	        };
-	    }
-	};
-	exports.Body.prototype.render = function (x, y, heading, anim, animEscudo) {
-	    this.heading = heading | 0;
-	    this.aura && this.aura.centered(x, y);
-	    this.grhs && this.grhs[this.heading] && this.grhs[this.heading][anim ? 'animatedVertical' : 'quietVertical'](x, y);
-	    this.head && this.head && this.head.render(x + this.headOffsetX, y + this.headOffsetY + OFFSET_HEAD, this.heading);
-	    this.helmet && this.helmet && this.helmet.render(x + this.headOffsetX, y + OFFSET_HEAD + this.headOffsetY, this.heading);
-	    this.rightHand && this.rightHand[this.heading] && this.rightHand[this.heading][animEscudo ? 'animatedVertical' : 'quietVertical'](x, y);
-	    this.leftHand && this.leftHand[this.heading] && this.leftHand[this.heading][animEscudo ? 'animatedVertical' : 'quietVertical'](x, y);
-	    this.name && engine.renderTextCentered(this.name, x + 16, y + 24);
-	};
-	exports.loadRaw = function (url, cb) {
-	    var bodyHeader = /\[BODY(\d+)\]/;
-	    var grhHeader = /WALK(1|2|3|4)=(\d+)/;
-	    var headOffsetHeaderX = /HeadOffsetX=(.+)/;
-	    var headOffsetHeaderY = /HeadOffsetY=(.+)/;
-	    this.loaded = false;
-	    $.ajax({
-	        url: url || 'cdn/indexes/cuerpos.txt',
-	        method: 'GET',
-	        success: function (e) {
-	            var datos = e.split(/(\n)/g);
-	            var cuerpoActual = null;
-	            for (var i in datos) {
-	                var t = void 0;
-	                if (t = bodyHeader.exec(datos[i])) {
-	                    cuerpoActual = {
-	                        g: { 1: 0, 2: 0, 3: 0, 4: 0 },
-	                        hX: 0,
-	                        hY: 0,
-	                        i: t[1]
-	                    };
-	                    cuerpos[t[1]] = cuerpoActual;
-	                }
-	                else if (t = grhHeader.exec(datos[i])) {
-	                    cuerpoActual && (cuerpoActual.g[t[1]] = parseInt(t[2]));
-	                }
-	                else if (t = headOffsetHeaderX.exec(datos[i])) {
-	                    cuerpoActual && (cuerpoActual.hX = parseInt(t[1]));
-	                }
-	                else if (t = headOffsetHeaderY.exec(datos[i])) {
-	                    cuerpoActual && (cuerpoActual.hY = parseInt(t[1]));
-	                }
-	            }
-	            //console.log(cuerpos)
-	            exports.loaded = true;
-	            cb && cb();
-	        }
-	    });
-	};
-	exports.loaded = false;
-
-
-/***/ },
-/* 12 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var grh = __webpack_require__(10);
-	var DB = {};
-	var DBHelmets = {};
-	var heads = {};
-	var helmets = {};
-	exports.Head = function Head(head) {
-	    this.grh = {
-	        0: grh.get(head.g[1]),
-	        1: grh.get(head.g[2]),
-	        2: grh.get(head.g[3]),
-	        3: grh.get(head.g[4])
-	    };
-	};
-	exports.Head.prototype.grh = null;
-	exports.Head.prototype.render = function (x, y, heading) {
-	    this.grh && this.grh[heading] && this.grh[heading].quiet(x - this.grh[heading].centerX, y);
-	};
-	exports.Head.prototype.renderBottomAligned = function (x, y, heading) {
-	    this.grh && this.grh[heading] && this.grh[heading].quiet(x - this.grh[heading].centerX, y - this.grh[heading].height);
-	};
-	exports.get = function (index) {
-	    return heads[index] && (DB[index] = DB[index] || new exports.Head(heads[index])) || null;
-	};
-	exports.getHelmet = function (index) {
-	    return helmets[index] && (DBHelmets[index] = DBHelmets[index] || new exports.Head(helmets[index])) || null;
-	};
-	function parseInto(obj, e) {
-	    var headHeader = /\[HEAD(\d+)\]/;
-	    var grhHeader = /Head(1|2|3|4)=(\d+)/;
-	    var data = e.split(/(\n)/g);
-	    var actualHead = null;
-	    for (var i in data) {
-	        var d = mz.trim(data[i]);
-	        var t = void 0;
-	        if (t = headHeader.exec(d)) {
-	            actualHead = {
-	                g: { 1: 0, 2: 0, 3: 0, 4: 0 },
-	                i: t[1]
-	            };
-	            obj[t[1]] = actualHead;
-	        }
-	        else if (t = grhHeader.exec(d)) {
-	            actualHead && (actualHead.g[t[1]] = parseInt(t[2]));
-	        }
-	    }
-	}
-	exports.loadHeadsRaw = function (url, cb) {
-	    $.ajax({
-	        url: url || 'cdn/indexes/cabezas.txt',
-	        method: 'GET',
-	        success: function (e) {
-	            parseInto(heads, e);
-	            cb && cb();
-	        }
-	    });
-	};
-	exports.loadHelmetsRaw = function (url, cb) {
-	    $.ajax({
-	        url: url || 'cdn/indexes/cascos.txt',
-	        method: 'GET',
-	        success: function (e) {
-	            parseInto(helmets, e);
-	            cb && cb();
-	        }
-	    });
-	};
-
-
-/***/ },
-/* 13 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var input_1 = __webpack_require__(14);
-	var Camera = __webpack_require__(15);
-	var Heading = null;
-	var HeadingHist = [0, 1, 2, 3];
-	var Teclas = ['40', '39', '38', '37'];
-	var ultimoHeading = null;
-	input_1.KeyStates.on('37', function (b) {
-	    ultimoHeading != Heading && (ultimoHeading = Heading);
-	    Heading = 3;
-	});
-	input_1.KeyStates.on('38', function (b) {
-	    ultimoHeading != Heading && (ultimoHeading = Heading);
-	    Heading = 2;
-	});
-	input_1.KeyStates.on('39', function (b) {
-	    ultimoHeading != Heading && (ultimoHeading = Heading);
-	    Heading = 1;
-	});
-	input_1.KeyStates.on('40', function (b) {
-	    ultimoHeading != Heading && (ultimoHeading = Heading);
-	    Heading = 0;
-	});
-	Camera.bindFn(function () {
-	    if (!Camera.isMoving()) {
-	        if (!input_1.KeyStates.check(Teclas[Heading])) {
-	            if (input_1.KeyStates.check(Teclas[ultimoHeading])) {
-	                var t = ultimoHeading;
-	                ultimoHeading != Heading && (ultimoHeading = Heading);
-	                Heading = t;
-	            }
-	            else if (input_1.KeyStates.check(Teclas[0])) {
-	                ultimoHeading != Heading && (ultimoHeading = Heading);
-	                Heading = 0;
-	            }
-	            else if (input_1.KeyStates.check(Teclas[1])) {
-	                ultimoHeading != Heading && (ultimoHeading = Heading);
-	                Heading = 1;
-	            }
-	            else if (input_1.KeyStates.check(Teclas[2])) {
-	                ultimoHeading != Heading && (ultimoHeading = Heading);
-	                Heading = 2;
-	            }
-	            else if (input_1.KeyStates.check(Teclas[3])) {
-	                ultimoHeading != Heading && (ultimoHeading = Heading);
-	                Heading = 3;
-	            }
-	            else {
-	                Heading = null;
-	            }
-	        }
-	        if (Heading != null) {
-	            Camera.Mover(Heading);
-	        }
-	    }
-	});
-
-
-/***/ },
-/* 14 */
-/***/ function(module, exports) {
-
-	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
-	var keyStateObserver = (function (_super) {
-	    __extends(keyStateObserver, _super);
-	    function keyStateObserver() {
-	        var _this = this;
-	        _super.call(this);
-	        this.keyStates = {};
-	        $(document).keydown(function (e) { return _this.keyDown(e.keyCode.toString()); });
-	        $(document).keyup(function (e) { return _this.keyUp(e.keyCode.toString()); });
-	    }
-	    keyStateObserver.prototype.keyDown = function (cual) {
-	        this.keyStates[cual] = true;
-	        this.emit(cual, true);
-	    };
-	    keyStateObserver.prototype.keyUp = function (cual) {
-	        this.keyStates[cual] = false;
-	        this.emit(cual, false);
-	    };
-	    keyStateObserver.prototype.check = function (cual) {
-	        return !!this.keyStates[cual];
-	    };
-	    return keyStateObserver;
-	}(mz.EventDispatcher));
-	exports.KeyStates = new keyStateObserver;
-
-
-/***/ },
-/* 15 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var engine = __webpack_require__(1);
-	var x = 0, y = 0;
-	var width = 0, height = 0, ctx = null;
-	var _moviendo = false, AddX = 0, AddY = 0, _continuar = false;
-	var UltimoHeading = -1;
-	var VelCamara = 192 / 1000;
-	exports.boundingBox = {
-	    minX: 0,
-	    minY: 0,
-	    maxX: 0,
-	    maxY: 0
-	};
-	exports.pos = { x: 0, y: 0 };
-	var _check_camera = null;
-	exports.bindFn = function (cb) {
-	    _check_camera = cb || null;
-	};
-	exports.setSpeed = function (freq) {
-	    exports.velCamara = VelCamara = freq || 192 / 1000;
-	};
-	exports.velCamara = VelCamara;
-	var map = __webpack_require__(16);
-	exports.update = function (elapsedTime) {
-	    if (!map)
-	        return;
-	    if (_moviendo) {
-	        if (AddX > 0) {
-	            AddX -= elapsedTime * VelCamara;
-	            if (AddX <= 0) {
-	                _moviendo = false;
-	            }
-	        }
-	        if (AddX < 0) {
-	            AddX += elapsedTime * VelCamara;
-	            if (AddX >= 0) {
-	                _moviendo = false;
-	            }
-	        }
-	        if (AddY > 0) {
-	            AddY -= elapsedTime * VelCamara;
-	            if (AddY <= 0) {
-	                _moviendo = false;
-	            }
-	        }
-	        if (AddY < 0) {
-	            AddY += elapsedTime * VelCamara;
-	            if (AddY >= 0) {
-	                _moviendo = false;
-	            }
-	        }
-	        if (!_moviendo) {
-	            _check_camera && _check_camera();
-	            if (!_moviendo) {
-	                AddY = 0;
-	                AddX = 0;
-	            }
-	        }
-	    }
-	    else
-	        _check_camera && _check_camera();
-	    exports.boundingBox.minX = Math.max(Math.round(x - 50 - 2), 0);
-	    exports.boundingBox.minY = Math.max(Math.round(y - 38 - 2), 0);
-	    exports.boundingBox.maxX = Math.min(Math.round(x + 50 + 2), map.mapSize);
-	    exports.boundingBox.maxY = Math.min(Math.round(y + 38 + 2), map.mapSize);
-	    exports.pos.x = (x * 32 - AddX) | 0;
-	    exports.pos.y = (y * 32 - AddY) | 0;
-	    engine.translate(-exports.pos.x - 16 + 400 | 0, -exports.pos.y - 16 + 300);
-	};
-	exports.unstranslate = function () {
-	    engine.translate(exports.pos.x + 16 - 400 | 0, exports.pos.y + 16 - 300);
-	};
-	exports.Mover = function (heading) {
-	    if (!_moviendo) {
-	        switch (heading) {
-	            case 0:
-	                AddY += 32;
-	                AddX = 0;
-	                y++;
-	                break;
-	            case 1:
-	                AddX += 32;
-	                AddY = 0;
-	                x++;
-	                break;
-	            case 2:
-	                AddY -= 32;
-	                AddX = 0;
-	                y--;
-	                break;
-	            case 3:
-	                AddX -= 32;
-	                AddY = 0;
-	                x--;
-	                break;
-	        }
-	        exports.observable.trigger('moveByHead', heading, x, y);
-	        exports.observable.trigger('position', x, y, exports.pos);
-	    }
-	    _moviendo = true;
-	};
-	exports.setPos = function (_x, _y) {
-	    x = _x | 0;
-	    y = _y | 0;
-	    AddY = AddX = 0;
-	    _moviendo = false;
-	    exports.pos.x = (x * 32 - AddX) | 0;
-	    exports.pos.y = (y * 32 - AddY) | 0;
-	};
-	exports.isMoving = function () { return _moviendo; };
-	exports.getPos = function () {
-	    return {
-	        x: exports.pos.x,
-	        y: exports.pos.y
-	    };
-	};
-	exports.observable = new mz.EventDispatcher();
-
-
-/***/ },
-/* 16 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	//define(['js/adz/mzengine/mzengine', 'js/adz/mzengine/camera', 'js/adz/mzengine/textures'], function(engine, Camera, textures){	
 	var engine = __webpack_require__(1);
-	var Camera = __webpack_require__(15);
+	var Camera = __webpack_require__(11);
 	var textures = __webpack_require__(4);
 	var that = this;
 	that.Tile = function Tile() {
@@ -1450,9 +1637,9 @@
 	that.Tile.prototype.capa4 = null;
 	that.Tile.prototype.char = null;
 	var cacheTileSize = 16;
-	var TileSize = 32;
-	var cacheSize = cacheTileSize * TileSize;
-	var mapSize = 250;
+	exports.tileSize = 32;
+	var cacheSize = cacheTileSize * exports.tileSize;
+	exports.mapSize = 250;
 	var cacheando = false;
 	var cacheMax = 1;
 	var cacheValue = 0;
@@ -1488,7 +1675,7 @@
 	    var ct = 0;
 	    for (var y = 0; y < 16; y++) {
 	        for (var x = 0; x < 32; x++) {
-	            Tileset[tileset].push(textures.Grh(url, TileSize, TileSize, x * TileSize, y * TileSize));
+	            Tileset[tileset].push(textures.Grh(url, exports.tileSize, exports.tileSize, x * exports.tileSize, y * exports.tileSize));
 	        }
 	        ;
 	    }
@@ -1508,50 +1695,50 @@
 	    var c = {
 	        minX: Cx * cacheTileSize,
 	        minY: Cy * cacheTileSize,
-	        maxX: Math.min((Cx + 1) * cacheTileSize, mapSize),
-	        maxY: Math.min((Cy + 1) * cacheTileSize, mapSize)
+	        maxX: Math.min((Cx + 1) * cacheTileSize, exports.mapSize),
+	        maxY: Math.min((Cy + 1) * cacheTileSize, exports.mapSize)
 	    };
 	    var tX = 0, tY = 0;
 	    for (var x = c.minX; x < c.maxX; x++) {
 	        for (var y = c.minY; y < c.maxY; y++) {
 	            mapData[x][y] && mapData[x][y].piso && mapData[x][y].piso(tX, tY);
-	            tY += TileSize;
+	            tY += exports.tileSize;
 	        }
 	        ;
 	        tY = 0;
-	        tX += TileSize;
+	        tX += exports.tileSize;
 	    }
 	    ;
 	    tX = 0;
 	    tY = 0;
 	    if (c.minX / cacheTileSize > 1) {
 	        c.minX -= 1;
-	        tX -= TileSize;
+	        tX -= exports.tileSize;
 	    }
 	    if (c.minY / cacheTileSize > 1) {
 	        c.minY -= 1;
-	        tY -= TileSize;
+	        tY -= exports.tileSize;
 	    }
-	    if (c.maxX < mapSize)
+	    if (c.maxX < exports.mapSize)
 	        c.maxX += 1;
-	    if (c.maxY < mapSize)
+	    if (c.maxY < exports.mapSize)
 	        c.maxY += 1;
 	    for (var y = c.minY; y < c.maxY; y++) {
 	        for (var x = c.minX; x < c.maxX; x++) {
 	            mapData[x][y] && mapData[x][y].capa1 && mapData[x][y].capa1(tX, tY);
 	            mapData[x][y] && mapData[x][y].capa2 && mapData[x][y].capa2.centrado(tX, tY);
-	            tY += TileSize;
+	            tY += exports.tileSize;
 	        }
 	        ;
 	        tY = 0;
-	        tX += TileSize;
+	        tX += exports.tileSize;
 	    }
 	    ;
 	    engine.setContext(null);
 	    return textures.GrhFromCache(canvasCache /*canvasCache.toDataURL("image/png")*/, cacheSize);
 	}
 	var cachearMapa = function (cb) {
-	    tamanioCache = Math.ceil(mapSize / cacheTileSize);
+	    tamanioCache = Math.ceil(exports.mapSize / cacheTileSize);
 	    if (areasCache == null) {
 	        areasCache = new Array(tamanioCache + 1);
 	        for (var y = 0; y <= tamanioCache; y++) {
@@ -1575,211 +1762,216 @@
 	    ;
 	};
 	var chars = null;
-	module.exports = {
-	    tileSize: TileSize,
-	    mapSize: mapSize,
-	    init: function () {
-	        armarCapas(mapSize, mapSize);
-	        //this.loadMap();
-	    },
-	    render: function (elapsedTime) {
-	        if (cacheando) {
-	            engine.renderThisUI(function (ctx) {
-	                var circ = Math.PI * 2;
-	                var quart = Math.PI / 2;
-	                ctx.strokeStyle = '#CC9933';
-	                ctx.lineCap = 'square';
-	                ctx.lineWidth = 10.0;
-	                ctx.beginPath();
-	                ctx.arc(400, 300, 70, -quart, circ * (cacheValue / cacheMax) - quart, false);
-	                ctx.stroke();
-	            });
-	            return;
-	        }
-	        var minX = boundingBox.minX - cacheTileSize;
-	        var minY = boundingBox.minY - cacheTileSize;
-	        for (var x = 0; x < tamanioCache; x++) {
-	            for (var y = 0; y < tamanioCache; y++) {
-	                var tX = x * cacheTileSize;
-	                var tY = y * cacheTileSize;
-	                if (tX < boundingBox.minX || tX > boundingBox.maxX || tY < boundingBox.minY || tY > boundingBox.maxY)
-	                    continue;
-	                areasCache[x][y] && areasCache[x][y](x * cacheSize, y * cacheSize);
-	            }
-	            ;
-	        }
-	        for (var y_1 = boundingBox.minY; y_1 < boundingBox.maxY; y_1++) {
-	            for (var x_1 = boundingBox.minX; x_1 < boundingBox.maxX; x_1++) {
-	                mapData[x_1][y_1].capa3 && mapData[x_1][y_1].capa3.vertical(x_1 * TileSize, y_1 * TileSize);
-	            }
-	            ;
-	        }
-	        chars = chars || __webpack_require__(17) && __webpack_require__(17).chars;
-	        chars && chars.forEach(function (e) {
-	            /*if(e === myChar){
-	                var camPos = Camera.pos;//Camera.getPos();
-	                e.render(elapsedTime, camPos.x, camPos.y);
-	            } else*/
-	            e.render(elapsedTime);
+	function init() {
+	    armarCapas(exports.mapSize, exports.mapSize);
+	    //this.loadMap();
+	}
+	exports.init = init;
+	function render(elapsedTime) {
+	    if (cacheando) {
+	        engine.renderThisUI(function (ctx) {
+	            var circ = Math.PI * 2;
+	            var quart = Math.PI / 2;
+	            ctx.strokeStyle = '#CC9933';
+	            ctx.lineCap = 'square';
+	            ctx.lineWidth = 10.0;
+	            ctx.beginPath();
+	            ctx.arc(400, 300, 70, -quart, circ * (cacheValue / cacheMax) - quart, false);
+	            ctx.stroke();
 	        });
-	    },
-	    loadMap: function (data, cb) {
-	        cacheando = true;
-	        cacheMax = 1;
-	        cacheValue = 0;
-	        var listaGraficos = [
-	            'cdn/grh/tilesets/1.png'
-	        ];
-	        textures.require(listaGraficos, function () {
-	            loadTileset(0, 'cdn/grh/tilesets/1.png');
-	            armarCapas(mapSize, mapSize);
-	            for (var x = 0; x < mapSize; x++) {
-	                for (var y = 0; y < mapSize; y++) {
-	                    mapData[x][y].piso = Tileset[0][x % 4 + (y % 4) * 32];
-	                }
-	            }
-	            /*
-	                            for(var i = 1; i < 100; i++){
-	                                mapData[(Math.random() * 50) | 0][(Math.random() * 50) | 0].capa1 =  Tileset[1][48 + (Math.random() * 16) | 0];
-	                                mapData[(Math.random() * 50) | 0][(Math.random() * 50) | 0].capa2 =  Tileset[1][15];
-	                            }
-	            
-	                            mapData[0][0].capa3 =  textures.Grh('cdn/grh/png/7001.png',256,256,0,0,1);
-	            
-	                            for(var i = 1; i < 20; i++){
-	                                mapData[(Math.random() * 50) | 0][(Math.random() * 50) | 0].capa3 =  textures.Grh('cdn/grh/png/7001.png',256,256,0,0,1);
-	                            }
-	                            */
-	            recachearmapa(cb);
-	        }, function progreso(total, cantidad) {
-	            cacheMax = total;
-	            cacheValue = cantidad;
-	        });
+	        return;
 	    }
-	};
-	//}) 
+	    var minX = boundingBox.minX - cacheTileSize;
+	    var minY = boundingBox.minY - cacheTileSize;
+	    for (var x = 0; x < tamanioCache; x++) {
+	        for (var y = 0; y < tamanioCache; y++) {
+	            var tX = x * cacheTileSize;
+	            var tY = y * cacheTileSize;
+	            if (tX < boundingBox.minX || tX > boundingBox.maxX || tY < boundingBox.minY || tY > boundingBox.maxY)
+	                continue;
+	            areasCache[x][y] && areasCache[x][y](x * cacheSize, y * cacheSize);
+	        }
+	        ;
+	    }
+	    for (var y_1 = boundingBox.minY; y_1 < boundingBox.maxY; y_1++) {
+	        for (var x_1 = boundingBox.minX; x_1 < boundingBox.maxX; x_1++) {
+	            mapData[x_1][y_1].capa3 && mapData[x_1][y_1].capa3.vertical(x_1 * exports.tileSize, y_1 * exports.tileSize);
+	        }
+	        ;
+	    }
+	    chars = chars || __webpack_require__(20) && __webpack_require__(20).chars;
+	    for (var char in chars) {
+	        chars[char].render(elapsedTime);
+	    }
+	}
+	exports.render = render;
+	function loadMap(data, cb) {
+	    cacheando = true;
+	    cacheMax = 1;
+	    cacheValue = 0;
+	    var listaGraficos = [
+	        'cdn/grh/tilesets/1.png'
+	    ];
+	    textures.require(listaGraficos, function () {
+	        loadTileset(0, 'cdn/grh/tilesets/1.png');
+	        armarCapas(exports.mapSize, exports.mapSize);
+	        for (var x = 0; x < exports.mapSize; x++) {
+	            for (var y = 0; y < exports.mapSize; y++) {
+	                mapData[x][y].piso = Tileset[0][x % 4 + (y % 4) * 32];
+	            }
+	        }
+	        for (var i = 1; i < 100; i++) {
+	            mapData[(Math.random() * 50) | 0][(Math.random() * 50) | 0].capa1 = Tileset[0][48 + (Math.random() * 16) | 0];
+	            mapData[(Math.random() * 50) | 0][(Math.random() * 50) | 0].capa2 = Tileset[0][15];
+	        }
+	        /*
+	                        mapData[0][0].capa3 =  textures.Grh('cdn/grh/png/7001.png',256,256,0,0,1);
+	        
+	                        for(var i = 1; i < 20; i++){
+	                            mapData[(Math.random() * 50) | 0][(Math.random() * 50) | 0].capa3 =  textures.Grh('cdn/grh/png/7001.png',256,256,0,0,1);
+	                        }
+	                        */
+	        recachearmapa(cb);
+	    }, function progreso(total, cantidad) {
+	        cacheMax = total;
+	        cacheValue = cantidad;
+	    });
+	}
+	exports.loadMap = loadMap;
 
 
 /***/ },
-/* 17 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var map = __webpack_require__(16);
-	var bodies = __webpack_require__(11);
-	var Camera = __webpack_require__(15);
-	exports.mainChar = null;
-	exports.BodyFactory = (function () {
-	    return function (body, head, alto) {
-	        var _x = 0;
-	        var _y = 0;
-	        var AddX = 0, AddY = 0;
-	        var _heading = 0;
-	        var enMovimiento = false;
-	        //console.log(bodies)
-	        var Body = new bodies.Body();
-	        Body.setBody(body);
-	        Body.setHead(head);
-	        return {
-	            body: Body,
-	            render: function (elapsedTime, x, y) {
-	                if (arguments.length == 1) {
-	                    x = _x * map.tileSize - AddX;
-	                    y = _y * map.tileSize - AddY;
-	                }
-	                if (this == exports.mainChar) {
-	                    x = Camera.pos.x;
-	                    y = Camera.pos.y;
-	                }
-	                if (AddX > 0) {
-	                    AddX -= elapsedTime * Camera.velCamara;
-	                    if (AddX <= 0) {
-	                        enMovimiento = false;
-	                    }
-	                }
-	                if (AddX < 0) {
-	                    AddX += elapsedTime * Camera.velCamara;
-	                    if (AddX >= 0) {
-	                        enMovimiento = false;
-	                    }
-	                }
-	                if (AddY > 0) {
-	                    AddY -= elapsedTime * Camera.velCamara;
-	                    if (AddY <= 0) {
-	                        enMovimiento = false;
-	                    }
-	                }
-	                if (AddY < 0) {
-	                    AddY += elapsedTime * Camera.velCamara;
-	                    if (AddY >= 0) {
-	                        enMovimiento = false;
-	                    }
-	                }
-	                /*
-	                var tmpx = x - ((AnchoCuerpos / 2) | 0) + 16;
-	                var tmpy = y - AltoCuerpos + 16;
-	
-	                
-	                this.body[_heading][
-	                    !enMovimiento ? 0 : ((engine.tick / 60) | 0) % this.body[_heading].length
-	                ](tmpx,tmpy);
-	
-	                this.head[_heading](x + 8,tmpy - 8);
-	                */
-	                this.body && this.body.render(x, y, _heading, enMovimiento);
-	            },
-	            setPos: function (x, y) {
-	                enMovimiento = false;
-	                _x = x;
-	                _y = y;
-	                AddX = 0;
-	                AddY = 0;
-	            },
-	            moveByHead: function (heading) {
-	                switch (heading) {
-	                    case 0:
-	                        AddY = map.tileSize;
-	                        AddX = 0;
-	                        _y++;
-	                        break;
-	                    case 1:
-	                        AddX = map.tileSize;
-	                        AddY = 0;
-	                        _x++;
-	                        break;
-	                    case 2:
-	                        AddY = -map.tileSize;
-	                        AddX = 0;
-	                        _y--;
-	                        break;
-	                    case 3:
-	                        AddX = -map.tileSize;
-	                        AddY = 0;
-	                        _x--;
-	                        break;
-	                }
-	                _heading = heading;
-	                enMovimiento = true;
-	            },
-	            frenar: function () {
-	                enMovimiento = false;
-	                AddX = 0;
-	                AddY = 0;
-	            },
-	            enMovimiento: function () { return enMovimiento; },
-	            setHeading: function (heading) {
-	                _heading = heading;
-	            }
-	        };
+	var map = __webpack_require__(19);
+	var engine = __webpack_require__(1);
+	var bodies = __webpack_require__(8);
+	var Camera = __webpack_require__(11);
+	var common = __webpack_require__(12);
+	var state = __webpack_require__(21);
+	var ClientPlayer = (function () {
+	    function ClientPlayer() {
+	        this.x = 0;
+	        this.y = 0;
+	        this.body = new bodies.Body();
+	        this.moving = false;
+	        this.AddX = 0;
+	        this.AddY = 0;
+	        this.headTextColor = "#aaa";
+	        this.key = (Math.random() * 100000).toString(16);
+	    }
+	    ClientPlayer.prototype.setPos = function (x, y) {
+	        this.moving = false;
+	        this.x = x;
+	        this.y = y;
+	        this.AddX = 0;
+	        this.AddY = 0;
 	    };
-	})();
-	exports.render = function (x, y) {
-	};
-	exports.chars = [];
+	    ClientPlayer.prototype.setChat = function (text) {
+	        this.setText(text);
+	    };
+	    ClientPlayer.prototype.setText = function (text) {
+	        this.headText = text;
+	    };
+	    ClientPlayer.prototype.render = function (elapsedTime, x, y) {
+	        if (arguments.length == 1) {
+	            x = this.x * map.tileSize - this.AddX;
+	            y = this.y * map.tileSize - this.AddY;
+	        }
+	        if (this.key == state.playerKey) {
+	            x = Camera.pos.x;
+	            y = Camera.pos.y;
+	        }
+	        if (this.AddX > 0) {
+	            this.AddX -= elapsedTime * Camera.velCamara;
+	            if (this.AddX <= 0) {
+	                this.moving = false;
+	            }
+	        }
+	        if (this.AddX < 0) {
+	            this.AddX += elapsedTime * Camera.velCamara;
+	            if (this.AddX >= 0) {
+	                this.moving = false;
+	            }
+	        }
+	        if (this.AddY > 0) {
+	            this.AddY -= elapsedTime * Camera.velCamara;
+	            if (this.AddY <= 0) {
+	                this.moving = false;
+	            }
+	        }
+	        if (this.AddY < 0) {
+	            this.AddY += elapsedTime * Camera.velCamara;
+	            if (this.AddY >= 0) {
+	                this.moving = false;
+	            }
+	        }
+	        /*
+	        var tmpx = x - ((AnchoCuerpos / 2) | 0) + 16;
+	        var tmpy = y - AltoCuerpos + 16;
+	
+	        
+	        this.body[_heading][
+	            !enMovimiento ? 0 : ((engine.tick / 60) | 0) % this.body[_heading].length
+	        ](tmpx,tmpy);
+	
+	        this.head[_heading](x + 8,tmpy - 8);
+	        */
+	        this.body && this.body.render(x, y, this.heading, this.moving);
+	        this.headText && this.headText.length && engine.drawText(this.headText, x + 16, y - 45, true, this.headTextColor);
+	    };
+	    ClientPlayer.prototype.moveByHead = function (heading) {
+	        switch (heading) {
+	            case common.Enums.Heading.South:
+	                this.AddY = map.tileSize;
+	                this.AddX = 0;
+	                this.y++;
+	                break;
+	            case common.Enums.Heading.East:
+	                this.AddX = map.tileSize;
+	                this.AddY = 0;
+	                this.x++;
+	                break;
+	            case common.Enums.Heading.North:
+	                this.AddY = -map.tileSize;
+	                this.AddX = 0;
+	                this.y--;
+	                break;
+	            case common.Enums.Heading.West:
+	                this.AddX = -map.tileSize;
+	                this.AddY = 0;
+	                this.x--;
+	                break;
+	        }
+	        this.heading = heading;
+	        this.moving = true;
+	    };
+	    ClientPlayer.prototype.frenar = function () {
+	        this.moving = false;
+	        this.AddX = 0;
+	        this.AddY = 0;
+	    };
+	    ClientPlayer.prototype.setHeading = function (heading) {
+	        this.heading = heading;
+	    };
+	    return ClientPlayer;
+	}());
+	exports.ClientPlayer = ClientPlayer;
+	exports.chars = {};
 
 
 /***/ },
-/* 18 */
+/* 21 */
+/***/ function(module, exports) {
+
+	"use strict";
+	exports.playerKey = null;
+
+
+/***/ },
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -1794,8 +1986,156 @@
 	        return;
 	    frameInterno(0, 0);
 	    hotBar(200, 600 - 64);
-	    barras(600, 600 - 64);
+	    //barras(600, 600 - 64);
 	};
+
+
+/***/ },
+/* 23 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var common_1 = __webpack_require__(12);
+	var handler_1 = __webpack_require__(24);
+	var client = null;
+	exports.tape = new common_1.WireProtocol.Tape();
+	var handler = new handler_1.Handler(exports.tape);
+	function connect(username) {
+	    if (client && client.readyState == client.OPEN) {
+	        //console.error("[CLI] Alredy connected");
+	        return;
+	    }
+	    client = new WebSocket("ws://" + location.host + "/__c/" + username);
+	    exports.tape.emit(common_1.WireProtocol.Tape.ON_EVERY_CODE, common_1.Packets.PacketCodes.EVT_Disconnected, {});
+	    exports.tape.emit(common_1.Packets.PacketCodes.EVT_Disconnected.toString());
+	    client.onclose = function () {
+	        client = null;
+	        exports.tape.emit(common_1.WireProtocol.Tape.ON_EVERY_CODE, common_1.Packets.PacketCodes.EVT_Disconnected, {});
+	        exports.tape.emit(common_1.Packets.PacketCodes.EVT_Disconnected.toString());
+	    };
+	    client.onopen = function () {
+	        exports.tape.emit(common_1.WireProtocol.Tape.ON_EVERY_CODE, common_1.Packets.PacketCodes.EVT_Connected, {});
+	        exports.tape.emit(common_1.Packets.PacketCodes.EVT_Connected.toString());
+	    };
+	    client.onmessage = function (message) {
+	        exports.tape.handlePacket(message.data);
+	    };
+	}
+	exports.connect = connect;
+	function send(packet) {
+	    if (client && client.readyState == client.OPEN) {
+	        if (packet instanceof common_1.SimplePacket)
+	            client.send(packet.serialize());
+	        else
+	            client.send(packet);
+	    }
+	}
+	exports.send = send;
+
+
+/***/ },
+/* 24 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var __extends = (this && this.__extends) || function (d, b) {
+	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    function __() { this.constructor = d; }
+	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	};
+	var common_1 = __webpack_require__(12);
+	var map = __webpack_require__(19);
+	var chars = __webpack_require__(20);
+	var client_1 = __webpack_require__(23);
+	var state = __webpack_require__(21);
+	var lg = __webpack_require__(3);
+	var Camera = __webpack_require__(11);
+	var dom_chat_1 = __webpack_require__(5);
+	var p = common_1.Packets.PacketCodes;
+	var Handler = (function (_super) {
+	    __extends(Handler, _super);
+	    function Handler(tape) {
+	        _super.call(this, tape);
+	        this.handlers = (_a = {},
+	            _a[p.SV_Welcome] = function () {
+	                client_1.send(common_1.Packets.CLI_Initialize({}));
+	            },
+	            _a[p.EVT_Disconnected] = function () {
+	                lg.show();
+	                state.playerKey = null;
+	                for (var i in chars.chars) {
+	                    delete chars.chars[i];
+	                }
+	            },
+	            _a[p.SV_SetMap] = function (data) {
+	                console.log("Loading map " + data.key);
+	                map.loadMap(null, function () {
+	                    // avisar al server que cargué el mapa
+	                    lg.hide();
+	                });
+	            },
+	            _a[p.SV_SetPlayerKey] = function (data) {
+	                state.playerKey = data.player;
+	            },
+	            _a[p.SV_MoveChar] = function (data) {
+	                var char = chars.chars[data.player];
+	                if (char) {
+	                    if (!isNaN(data.heading)) {
+	                        char.moveByHead(data.heading);
+	                    }
+	                    else {
+	                        char.setPos(data.x, data.y);
+	                    }
+	                }
+	            },
+	            _a[p.SV_UpdateChar] = function (data) {
+	                var char = chars.chars[data.key];
+	                if (!char) {
+	                    char = chars.chars[data.key] = new chars.ClientPlayer();
+	                }
+	                char.body.setBody(data.body || 1);
+	                char.body.setHead(data.head || 1);
+	                char.body.name = data.nick;
+	                char.setPos(data.x | 0, data.y | 0);
+	                char.heading = data.heading | 0;
+	                char.key = data.key;
+	                if (data.key == state.playerKey) {
+	                    Camera.setPos(char.x, char.y);
+	                }
+	            },
+	            _a[p.SV_RemoveChar] = function (data) {
+	                var char = chars.chars[data.player];
+	                if (char) {
+	                    delete chars.chars[data.player];
+	                }
+	            },
+	            _a[p.SV_Talk] = function (data) {
+	                var char = chars.chars[data.player];
+	                if (char) {
+	                    char.setChat(data.text);
+	                }
+	                dom_chat_1.chatPromptInstance.pushMessage(data);
+	            },
+	            _a
+	        );
+	        Camera.observable.on('moveByHead', function (heading, x, y) {
+	            if (state.playerKey) {
+	                if (chars.chars[state.playerKey]) {
+	                    chars.chars[state.playerKey].moveByHead(heading);
+	                    client_1.send(common_1.Packets.CLI_Walk({
+	                        heading: heading
+	                    }));
+	                }
+	            }
+	        });
+	        dom_chat_1.chatPromptInstance.on('chat', function (text) { return client_1.send(common_1.Packets.CLI_Talk({
+	            text: text
+	        })); });
+	        var _a;
+	    }
+	    return Handler;
+	}(common_1.WireProtocol.TapeHandler));
+	exports.Handler = Handler;
 
 
 /***/ }

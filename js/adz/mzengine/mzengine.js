@@ -81,7 +81,7 @@ function drawTextStroked(text, x, y, centered, color, strokeColor) {
 }
 exports.drawTextStroked = drawTextStroked;
 function drawFPS(elapsedTime) {
-    drawText("FPS: " + realFPS + " - " + Math.round(1000 / elapsedTime), 40, 30, false);
+    drawText("FPS: " + realFPS, 753, 20, false);
 }
 exports.tick = 0;
 exports.init = function (_canvas, w, h) {

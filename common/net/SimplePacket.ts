@@ -1,4 +1,4 @@
-import {PacketCodes} from './packets';
+import {PacketCodes} from '../protocol/packets';
 
 export class SimplePacket {
     constructor(public id: number, public data: any) {
@@ -18,7 +18,7 @@ export class SimplePacket {
             var parsed = JSON.parse(raw);
 
             if (parsed.id) {
-                console.log('<<' + PacketCodes[parsed.id] + ': ' + JSON.stringify(parsed.data));
+                console.log('>>' + PacketCodes[parsed.id] + ': ' + JSON.stringify(parsed.data));
                 return new SimplePacket(parsed.id, parsed.data);
             } else throw new TypeError("Message doesn't contains 'id': " + JSON.stringify(raw));
         } catch (e) {

@@ -1,5 +1,5 @@
 "use strict";
-var packets_1 = require('./packets');
+var packets_1 = require('../protocol/packets');
 var SimplePacket = (function () {
     function SimplePacket(id, data) {
         this.id = id;
@@ -16,7 +16,7 @@ var SimplePacket = (function () {
         try {
             var parsed = JSON.parse(raw);
             if (parsed.id) {
-                console.log('<<' + packets_1.PacketCodes[parsed.id] + ': ' + JSON.stringify(parsed.data));
+                console.log('>>' + packets_1.PacketCodes[parsed.id] + ': ' + JSON.stringify(parsed.data));
                 return new SimplePacket(parsed.id, parsed.data);
             }
             else
