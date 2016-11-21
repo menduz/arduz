@@ -22,6 +22,8 @@ export class ClientPlayer {
 	
 	private headText: string;
 	private headTextColor = "#aaa";
+	
+	private cleanChat = mz.delayer(() => this.headText = null, 15000);
 
 	key = (Math.random() * 100000).toString(16)
 
@@ -40,6 +42,8 @@ export class ClientPlayer {
 	
 	protected setText(text: string){
 		this.headText = text;
+		this.cleanChat.cancel();
+		this.cleanChat();
 	}
 
 	render(elapsedTime: number, x?: number, y?: number) {
@@ -91,7 +95,7 @@ export class ClientPlayer {
 		this.head[_heading](x + 8,tmpy - 8);
 		*/
 
-		this.body && this.body.render(x, y, this.heading, this.moving)
+		this.body && this.body.render(x, y, this.heading, this.moving, false)
 		
 		this.headText && this.headText.length && engine.drawText(this.headText, x + 16, y - 45, true, this.headTextColor)
 	}

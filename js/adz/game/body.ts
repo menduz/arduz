@@ -3,67 +3,72 @@ import * as grh from './grh';
 import * as heads from './head';
 import * as engine from '../mzengine/mzengine';
 
+import {Enums} from '../../../common'
+
 var OFFSET_HEAD = -34;
 
 var cuerpos = {};
 
-export var Body = function Body() {
+export class Body {
+	heading: Enums.Heading = Enums.Heading.South;
+	rightHand;
+	leftHand;
+	head;
+	helmet;
+	aura;
+	grhs;
+	name: string;
+	nameColor: string;
+	headOffsetX = 0;
+	headOffsetY = 0;
 
-}
-
-Body.prototype.rightHand = null;
-Body.prototype.leftHand = null;
-Body.prototype.head = null;
-Body.prototype.helmet = null;
-Body.prototype.aura = null;
-
-Body.prototype.heading = 1;
-
-Body.prototype.grhs = null;
-
-Body.prototype.name = null;
-
-Body.prototype.headOffsetX = 0;
-Body.prototype.headOffsetY = 0;
-
-Body.prototype.setHead = function (headIndex) {
-	this.head = heads.get(headIndex);
-}
-
-Body.prototype.setHelmet = function (headIndex) {
-	this.helmet = heads.getHelmet(headIndex);
-}
-
-Body.prototype.setBody = function (bodyIndex) {
-	this.grhs = null;
-	this.headOffsetX = 0;
-	this.headOffsetY = 0;
-
-	if (bodyIndex in cuerpos) {
-		this.headOffsetX = cuerpos[bodyIndex].hX;
-		this.headOffsetY = cuerpos[bodyIndex].hY;
-		this.grhs = {
-			0: grh.get(cuerpos[bodyIndex].g[1]),
-			1: grh.get(cuerpos[bodyIndex].g[2]),
-			2: grh.get(cuerpos[bodyIndex].g[3]),
-			3: grh.get(cuerpos[bodyIndex].g[4])
-		};
+	setHead(headIndex: number) {
+		this.head = heads.get(headIndex);
 	}
+
+	setHelmet(helmetIndex: number) {
+		this.helmet = heads.getHelmet(helmetIndex);
+	}
+
+	setBody(bodyIndex: number) {
+		this.grhs = null;
+		this.headOffsetX = 0;
+		this.headOffsetY = 0;
+
+		if (bodyIndex in cuerpos) {
+			this.headOffsetX = cuerpos[bodyIndex].hX;
+			this.headOffsetY = cuerpos[bodyIndex].hY;
+			this.grhs = {
+				0: grh.get(cuerpos[bodyIndex].g[1]),
+				1: grh.get(cuerpos[bodyIndex].g[2]),
+				2: grh.get(cuerpos[bodyIndex].g[3]),
+				3: grh.get(cuerpos[bodyIndex].g[4])
+			};
+		}
+	}
+
+	render(x: number, y: number, heading: Enums.Heading, anim: boolean, animEscudo: boolean) {
+		this.heading = heading | 0;
+		this.aura && this.aura.centered(x, y);
+		this.grhs && this.grhs[this.heading] && this.grhs[this.heading][anim ? 'animatedVertical' : 'quietVertical'](x, y);
+
+		this.head && this.head && this.head.render(x + this.headOffsetX, y + this.headOffsetY + OFFSET_HEAD, this.heading);
+		this.helmet && this.helmet && this.helmet.render(x + this.headOffsetX, y + OFFSET_HEAD + this.headOffsetY, this.heading);
+
+		this.rightHand && this.rightHand[this.heading] && this.rightHand[this.heading][animEscudo ? 'animatedVertical' : 'quietVertical'](x, y);
+		this.leftHand && this.leftHand[this.heading] && this.leftHand[this.heading][animEscudo ? 'animatedVertical' : 'quietVertical'](x, y);
+
+		this.name && engine.renderTextCentered(this.name, x + 16, y + 24);
+	};
 }
 
-Body.prototype.render = function (x, y, heading, anim, animEscudo) {
-	this.heading = heading | 0;
-	this.aura && this.aura.centered(x, y);
-	this.grhs && this.grhs[this.heading] && this.grhs[this.heading][anim ? 'animatedVertical' : 'quietVertical'](x, y);
 
-	this.head && this.head && this.head.render(x + this.headOffsetX, y + this.headOffsetY + OFFSET_HEAD, this.heading);
-	this.helmet && this.helmet && this.helmet.render(x + this.headOffsetX, y + OFFSET_HEAD + this.headOffsetY, this.heading);
 
-	this.rightHand && this.rightHand[this.heading] && this.rightHand[this.heading][animEscudo ? 'animatedVertical' : 'quietVertical'](x, y);
-	this.leftHand && this.leftHand[this.heading] && this.leftHand[this.heading][animEscudo ? 'animatedVertical' : 'quietVertical'](x, y);
 
-	this.name && engine.renderTextCentered(this.name, x + 16, y + 24);
-};
+
+
+
+
 
 export var loadRaw = function (url, cb) {
 	var bodyHeader = /\[BODY(\d+)\]/;
